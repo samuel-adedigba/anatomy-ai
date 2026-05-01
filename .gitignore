@@ -1,0 +1,37 @@
+# ─── Dependencies ──────────────────────────────────────────────
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ─── Build output ───────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ─── Environment ────────────────────────────────────────────────
+.env
+*.env.local
+
+# ─── Vector DB (binary, large — rebuild from raw-docs) ──────────
+data/vector-db/
+
+# ─── Raw 3D OBJ downloads (large, source data) ──────────────────
+engines/anatomy-assets/models/isa_BP3D_4.0_obj_99/
+engines/anatomy-assets/models/partof_BP3D_4.0_obj_99/
+
+# ─── OS ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── IDE ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ─── Logs ───────────────────────────────────────────────────────
+*.log
+logs/
+
+# Keep oversized local model out of git
+engines/anatomy-assets/models/full_body.glb

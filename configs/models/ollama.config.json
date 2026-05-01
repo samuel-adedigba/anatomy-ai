@@ -1,0 +1,15 @@
+{
+  "model": "llama3.2:3b",
+  "embed_model": "nomic-embed-text",
+  "ollama_base_url": "http://localhost:11434",
+  "context_window": 4096,
+  "request_timeout": 120,
+  "chunk_size": 512,
+  "chunk_overlap": 50,
+  "top_k": 5,
+  "notes": {
+    "why_3b": "16GB RAM CPU-only target. 3B fits comfortably with headroom for OS + vector ops.",
+    "why_nomic": "nomic-embed-text is lightweight, accurate, and runs well on Ollama locally.",
+    "upgrade_path": "Swap model to llama3.2:7b if running on 32GB+ RAM or with GPU."
+  }
+}

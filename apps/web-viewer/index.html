@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anatomy AI — Visual Engine</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #0a0a0f; overflow: hidden; }
+      #canvas-container { width: 100vw; height: 100vh; }
+      #viewer-ui {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        background: rgba(10, 10, 15, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 8px 10px;
+        color: #e6e6e6;
+        font: 13px/1.2 "Segoe UI", system-ui, -apple-system, sans-serif;
+        backdrop-filter: blur(6px);
+      }
+      #viewer-ui label { opacity: 0.9; }
+      #view-mode {
+        background: #12121a;
+        color: #e6e6e6;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 4px 8px;
+        min-width: 160px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="viewer-ui">
+      <label for="view-mode">View</label>
+      <select id="view-mode">
+        <option value="full_body">Full body</option>
+        <option value="skeleton">Skeleton</option>
+        <option value="muscular">Muscular</option>
+        <option value="nervous_system">Nervous system</option>
+        <option value="circulatory">Circulatory</option>
+        <option value="respiratory">Respiratory</option>
+        <option value="digestive">Digestive</option>
+        <option value="brain">Brain</option>
+        <option value="heart">Heart</option>
+        <option value="spine">Spine</option>
+      </select>
+    </div>
+    <div id="canvas-container"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

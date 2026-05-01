@@ -1,0 +1,91 @@
+STACK PER FOLDER (CLEAR + FINAL)
+📱 apps/mobile-app/
+React Native
+Expo
+Zustand (state)
+
+👉 Role:
+
+Chat UI
+Mode switching (skeleton, muscle, etc.)
+Sends user queries
+🌐 apps/web-viewer/ (optional but powerful)
+Three.js
+
+👉 Role:
+
+Heavy 3D rendering
+Runs in browser or embedded WebView
+🟩 services/api-gateway/
+Node.js
+Express
+
+👉 Role:
+
+Main backend
+Routes:
+/ask
+/visual-command
+Connects frontend ↔ AI
+🧠 services/ai-service/
+Python
+LlamaIndex
+Ollama
+(later optional) llama.cpp
+
+👉 Role:
+
+RAG pipeline
+Answer generation
+Citation grounding
+🔥 services/instruction-engine/ (YOUR CORE DIFFERENTIATOR)
+TypeScript / Node
+
+👉 Role:
+
+Converts AI response → structured JSON
+
+Example:
+
+{
+  "view_mode": "brain",
+  "highlight": ["cortex"],
+  "animation": "wave",
+  "camera": "zoom_in"
+}
+🎮 engines/visual-engine/
+Three.js
+
+👉 Role:
+
+Executes instructions
+Controls:
+rotation
+zoom
+highlight
+animation
+🧬 engines/anatomy-assets/
+GLB / GLTF models
+
+Sources:
+
+Visible Human Project
+BodyParts3D
+
+👉 Role:
+
+static base models (NOT generated)
+📚 data/
+LanceDB
+
+👉 Role:
+
+stores embeddings
+stores indexed knowledge
+⚙️ configs/
+Prompt engineering
+Model configs
+🧪 scripts/
+ingestion
+embedding
+preprocessing
