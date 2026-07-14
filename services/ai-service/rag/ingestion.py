@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from typing import Optional
+
 import lancedb
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.lancedb import LanceDBVectorStore
@@ -49,6 +51,3 @@ def ingest_documents(source_dir: Optional[str] = None) -> dict:
     )
 
     return {"status": "success", "indexed": len(documents)}
-
-
-from typing import Optional

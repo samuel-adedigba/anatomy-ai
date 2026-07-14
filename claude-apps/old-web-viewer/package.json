@@ -1,0 +1,19 @@
+{
+  "name": "anatomy-ai-web-viewer",
+  "version": "1.0.0",
+  "description": "Three.js visual engine — renders 3D anatomy and executes visual commands",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.165.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}

@@ -7,10 +7,6 @@ const MIN_DISTANCE = 0.2;
 const ZOOM_SCALE = 0.82;
 const ROTATE_STEP = Math.PI / 8;
 
-/**
- * CameraController handles all camera movements triggered by VisualCommands.
- * It keeps command-driven moves and user OrbitControls aligned to the same target.
- */
 export class CameraController {
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
@@ -27,7 +23,6 @@ export class CameraController {
 
   execute(action?: CameraAction): void {
     if (!action) return;
-
     switch (action) {
       case "zoom_in":
         this._zoom(ZOOM_SCALE);
@@ -41,12 +36,20 @@ export class CameraController {
       case "rotate_right":
         this._rotateAroundY(-ROTATE_STEP);
         break;
+      case "front":
+        this._setViewDirection(0, 0, 1);
+        break;
+      case "back":
+        this._setViewDirection(0, 0, -1);
+        break;
+      case "top":
+        this._setViewDirection(0, 1, 0.001);
+        break;
       case "reset":
         this.camera.position.copy(this.defaultPosition);
         this.target.copy(this.defaultTarget);
         break;
     }
-
     this._syncControls();
   }
 
@@ -61,8 +64,7 @@ export class CameraController {
 
     const verticalFov = THREE.MathUtils.degToRad(this.camera.fov);
     const aspect = Number.isFinite(this.camera.aspect) && this.camera.aspect > 0
-      ? this.camera.aspect
-      : 1;
+      ? this.camera.aspect : 1;
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * aspect);
     const fitHeightDistance = (size.y / 2) / Math.tan(verticalFov / 2);
     const fitWidthDistance = (size.x / 2) / Math.tan(horizontalFov / 2);
@@ -82,6 +84,14 @@ export class CameraController {
     this.camera.far = Math.max(distance * 100, modelRadius * 20);
     this.camera.updateProjectionMatrix();
     this._syncControls();
+  }
+
+  private _setViewDirection(dx: number, dy: number, dz: number): void {
+    const offset = this.camera.position.clone().sub(this.target);
+    const distance = offset.length();
+    this.camera.position.copy(this.target).add(
+      new THREE.Vector3(dx, dy, dz).normalize().multiplyScalar(distance)
+    );
   }
 
   private _rotateAroundY(angle: number): void {

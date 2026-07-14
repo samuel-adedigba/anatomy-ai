@@ -2,7 +2,7 @@ import axios from "axios";
 import { AskRequestBody, AskResponse } from "../types";
 import { AppError } from "../utils/errors";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8000";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8001";
 const INSTRUCTION_ENGINE_URL = process.env.INSTRUCTION_ENGINE_URL ?? "http://localhost:3002";
 
 /**

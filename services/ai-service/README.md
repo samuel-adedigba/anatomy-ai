@@ -33,5 +33,5 @@ python main.py
 ## First-run ingestion
 Place PDFs and markdown files inside `data/raw-docs/`, then call:
 ```
-POST http://localhost:8000/ingest
+POST http://localhost:8001/ingest
 ```

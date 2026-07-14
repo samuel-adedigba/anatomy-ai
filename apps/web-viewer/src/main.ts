@@ -1,13 +1,70 @@
 import { VisualEngine } from "./VisualEngine";
-import { VisualCommand } from "./types";
+import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+/** Send a message to the React Native host only when the bridge exists. */
+function postToHost(msg: ViewerToMobileMessage): void {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      (window as any).ReactNativeWebView?.postMessage
+    ) {
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify(msg));
+    }
+  } catch {
+    // Non-fatal: running in browser dev mode without a WebView host
+  }
+}
+
+/** Validate that an incoming object looks like a VisualCommand before executing. */
+function isValidCommand(obj: unknown): obj is VisualCommand {
+  if (typeof obj !== "object" || obj === null) return false;
+  const cmd = obj as Record<string, unknown>;
+  const validViewModes: ViewMode[] = [
+    "full_body", "skeleton", "muscular", "nervous_system",
+    "circulatory", "respiratory", "digestive", "brain", "heart", "spine",
+  ];
+  return (
+    typeof cmd["focus_region"] === "string" &&
+    typeof cmd["view_mode"] === "string" &&
+    validViewModes.includes(cmd["view_mode"] as ViewMode) &&
+    Array.isArray(cmd["highlight"]) &&
+    typeof cmd["animation"] === "string" &&
+    typeof cmd["confidence"] === "number"
+  );
+}
+
+// ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 const container = document.getElementById("canvas-container") as HTMLElement;
 const viewSelect = document.getElementById("view-mode") as HTMLSelectElement | null;
-const engine = new VisualEngine(container);
-let activeViewMode: VisualCommand["view_mode"] =
-  (viewSelect?.value as VisualCommand["view_mode"] | undefined) ?? "full_body";
+const loadingEl = document.getElementById("loading-overlay") as HTMLElement | null;
+const loadingLabel = document.getElementById("loading-label") as HTMLElement | null;
 
-const runCommand = (viewMode: VisualCommand["view_mode"]) => {
+let activeViewMode: ViewMode =
+  (viewSelect?.value as ViewMode | undefined) ?? "full_body";
+
+// Intercept model events so we can show/hide the loading overlay and notify host
+const engine = new VisualEngine(container, {
+  onModelLoading: (viewMode) => {
+    if (loadingEl) loadingEl.style.display = "flex";
+    if (loadingLabel) loadingLabel.textContent = `Loading ${viewMode.replace(/_/g, " ")}…`;
+    postToHost({ type: "model_loading", view_mode: viewMode as ViewMode });
+  },
+  onModelLoaded: (viewMode) => {
+    if (loadingEl) loadingEl.style.display = "none";
+    postToHost({ type: "model_loaded", view_mode: viewMode as ViewMode });
+  },
+  onError: (message, viewMode) => {
+    if (loadingEl) loadingEl.style.display = "none";
+    postToHost({ type: "viewer_error", message, view_mode: viewMode as ViewMode | undefined });
+  },
+});
+
+// ─── View mode selector (browser dev UI) ────────────────────────────────────
+
+const runCommand = (viewMode: ViewMode) => {
   activeViewMode = viewMode;
   engine.executeCommand({
     focus_region: "full_body",
@@ -21,51 +78,68 @@ const runCommand = (viewMode: VisualCommand["view_mode"]) => {
 
 if (viewSelect) {
   viewSelect.addEventListener("change", () => {
-    runCommand(viewSelect.value as VisualCommand["view_mode"]);
+    runCommand(viewSelect.value as ViewMode);
   });
-  runCommand(viewSelect.value as VisualCommand["view_mode"]);
+  runCommand(viewSelect.value as ViewMode);
 } else {
   engine.reset();
 }
 
-/**
- * Command bridge — listens for postMessage events from the React Native WebView.
- * The mobile app sends VisualCommand JSON via window.ReactNativeWebView.postMessage()
- * and the web-viewer receives it here via the window message event.
- *
- * This keeps the visual engine fully decoupled from the mobile app.
- */
+// ─── WebView message bridge ──────────────────────────────────────────────────
+// Receives VisualCommand JSON from React Native via postMessage.
+
 window.addEventListener("message", async (event: MessageEvent) => {
   try {
     const payload = event.data;
-    const command: VisualCommand =
-      typeof payload === "string" ? JSON.parse(payload) : (payload as VisualCommand);
-    const nextCommand = preserveActiveViewForCameraCommand(command, activeViewMode);
-    await engine.executeCommand(nextCommand);
-    activeViewMode = nextCommand.view_mode;
+    const parsed: unknown =
+      typeof payload === "string" ? JSON.parse(payload) : payload;
+
+    if (!isValidCommand(parsed)) {
+      console.warn("[web-viewer] Ignored invalid command:", parsed);
+      return;
+    }
+
+    const command = preserveViewModeForCameraCommand(parsed, activeViewMode);
+    await engine.executeCommand(command);
+    activeViewMode = command.view_mode;
+
     if (viewSelect && viewSelect.value !== activeViewMode) {
       viewSelect.value = activeViewMode;
     }
+
+    postToHost({ type: "command_complete", view_mode: activeViewMode });
   } catch (err) {
-    console.error("[web-viewer] Failed to parse or execute command:", err);
+    console.error("[web-viewer] Failed to handle message:", err);
+    postToHost({
+      type: "viewer_error",
+      message: err instanceof Error ? err.message : "Unknown error",
+    });
   }
 });
 
-// ─── Also expose on window for browser dev testing ────────────
-(window as any).executeCommand = (command: VisualCommand) => {
-  const nextCommand = preserveActiveViewForCameraCommand(command, activeViewMode);
-  engine.executeCommand(nextCommand);
-  activeViewMode = nextCommand.view_mode;
+// ─── Browser dev console helper ───────────────────────────────────────────────
+(window as any).executeCommand = async (command: VisualCommand) => {
+  if (!isValidCommand(command)) {
+    console.warn("[web-viewer] Invalid command passed to executeCommand:", command);
+    return;
+  }
+  const next = preserveViewModeForCameraCommand(command, activeViewMode);
+  await engine.executeCommand(next);
+  activeViewMode = next.view_mode;
   if (viewSelect && viewSelect.value !== activeViewMode) {
     viewSelect.value = activeViewMode;
   }
 };
 
-console.log("[web-viewer] Visual engine ready");
+// Notify host that the viewer is ready
+postToHost({ type: "viewer_ready" });
+console.log("[web-viewer] Visual engine ready — postMessage bridge active");
 
-function preserveActiveViewForCameraCommand(
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function preserveViewModeForCameraCommand(
   command: VisualCommand,
-  currentViewMode: VisualCommand["view_mode"]
+  currentViewMode: ViewMode
 ): VisualCommand {
   const isDefaultFullBodyCommand =
     command.view_mode === "full_body" &&
@@ -76,8 +150,5 @@ function preserveActiveViewForCameraCommand(
     return command;
   }
 
-  return {
-    ...command,
-    view_mode: currentViewMode,
-  };
+  return { ...command, view_mode: currentViewMode };
 }

@@ -41,7 +41,7 @@ anatomy-ai/
 ```
 User query (mobile-app)
   → POST /ask (api-gateway :3001)
-    → POST /query (ai-service :8000)     ← RAG + LLM
+    → POST /query (ai-service :8001)     ← RAG + LLM
     → POST /parse (instruction-engine :3002)  ← AI → VisualCommand
   ← { answer, sources, visualCommand }
   → postMessage to WebView (web-viewer)
@@ -78,22 +78,22 @@ python main.py
 ### 4. API Gateway (Node.js)
 ```bash
 cd services/api-gateway
-npm install
-npm run dev
+ pnpm install
+ pnpm dev
 ```
 
 ### 5. Instruction Engine (Node.js)
 ```bash
 cd services/instruction-engine
-npm install
-npm run dev
+ pnpm install
+ pnpm dev
 ```
 
 ### 6. Web Viewer (Three.js)
 ```bash
 cd apps/web-viewer
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ### 6a. 3D Anatomy Assets (BodyParts3D)
@@ -108,14 +108,14 @@ Use these archives:
 ```bash
 cd apps/mobile-app
 # Copy your Expo template here first, then:
-npm install
-npx expo start
+ pnpm install
+ pnpm start
 ```
 
 ### 8. Ingest your first documents
 ```bash
 # Drop PDFs into data/raw-docs/, then:
-curl -X POST http://localhost:8000/ingest
+curl -X POST http://localhost:8001/ingest
 # or run the standalone script:
 python scripts/ingestion/ingest.py
 ```
@@ -127,7 +127,7 @@ python scripts/ingestion/ingest.py
 | Service | Port |
 |---------|------|
 | api-gateway | 3001 |
-| ai-service | 8000 |
+| ai-service | 8001 |
 | instruction-engine | 3002 |
 | web-viewer | 5173 |
 

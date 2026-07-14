@@ -2,46 +2,106 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Anatomy AI — Visual Engine</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #0a0a0f; overflow: hidden; }
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #080C14; }
+
       #canvas-container { width: 100vw; height: 100vh; }
+
+      /* ── Dev UI overlay (hidden when embedded in WebView) ── */
       #viewer-ui {
         position: fixed;
-        top: 12px;
-        left: 12px;
-        z-index: 10;
+        top: 12px; left: 12px;
+        z-index: 20;
         display: flex;
         gap: 8px;
         align-items: center;
-        background: rgba(10, 10, 15, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(8, 12, 20, 0.82);
+        border: 1px solid rgba(0, 212, 255, 0.18);
         border-radius: 10px;
-        padding: 8px 10px;
-        color: #e6e6e6;
-        font: 13px/1.2 "Segoe UI", system-ui, -apple-system, sans-serif;
-        backdrop-filter: blur(6px);
+        padding: 7px 12px;
+        color: #e8edf4;
+        font: 13px/1.2 system-ui, -apple-system, sans-serif;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
-      #viewer-ui label { opacity: 0.9; }
+      #viewer-ui label { opacity: 0.75; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
       #view-mode {
-        background: #12121a;
-        color: #e6e6e6;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
+        background: #0f1724;
+        color: #e8edf4;
+        border: 1px solid rgba(0, 212, 255, 0.25);
+        border-radius: 7px;
         padding: 4px 8px;
         min-width: 160px;
+        font-size: 13px;
+        cursor: pointer;
+        outline: none;
+      }
+      #view-mode:focus { border-color: #00d4ff; }
+
+      /* ── Loading overlay ── */
+      #loading-overlay {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        background: rgba(8, 12, 20, 0.88);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        pointer-events: none;
+      }
+      #loading-overlay .spinner {
+        width: 36px; height: 36px;
+        border: 3px solid rgba(0, 212, 255, 0.18);
+        border-top-color: #00d4ff;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      #loading-label {
+        color: #aab4c4;
+        font: 13px/1.4 system-ui, -apple-system, sans-serif;
+        letter-spacing: 0.02em;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── First-use hint (shown briefly, fades out) ── */
+      #hint-overlay {
+        position: fixed;
+        bottom: 24px; left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        background: rgba(8, 12, 20, 0.78);
+        border: 1px solid rgba(0, 212, 255, 0.18);
+        border-radius: 10px;
+        padding: 9px 16px;
+        color: #aab4c4;
+        font: 12px/1.5 system-ui, -apple-system, sans-serif;
+        text-align: center;
+        pointer-events: none;
+        animation: fadeInOut 4s ease-in-out forwards;
+        white-space: nowrap;
+      }
+      @keyframes fadeInOut {
+        0%   { opacity: 0; }
+        15%  { opacity: 1; }
+        70%  { opacity: 1; }
+        100% { opacity: 0; }
       }
     </style>
   </head>
   <body>
-    <div id="viewer-ui">
+    <div id="viewer-ui" role="navigation" aria-label="Anatomy system selector">
       <label for="view-mode">View</label>
-      <select id="view-mode">
+      <select id="view-mode" aria-label="Select anatomy system">
         <option value="full_body">Full body</option>
         <option value="skeleton">Skeleton</option>
-        <option value="muscular">Muscular</option>
+        <option value="muscular">Muscles</option>
         <option value="nervous_system">Nervous system</option>
         <option value="circulatory">Circulatory</option>
         <option value="respiratory">Respiratory</option>
@@ -51,7 +111,19 @@
         <option value="spine">Spine</option>
       </select>
     </div>
-    <div id="canvas-container"></div>
+
+    <!-- Loading indicator -->
+    <div id="loading-overlay" role="status" aria-live="polite" aria-label="Loading model">
+      <div class="spinner" aria-hidden="true"></div>
+      <span id="loading-label">Loading…</span>
+    </div>
+
+    <!-- First-use drag hint — shown for 4 s then fades -->
+    <div id="hint-overlay" aria-hidden="true">
+      Drag to rotate · Pinch or scroll to zoom
+    </div>
+
+    <div id="canvas-container" role="img" aria-label="3D anatomy viewer"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

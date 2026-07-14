@@ -1,3 +1,7 @@
+// ─── Core visual command types ────────────────────────────────────────────────
+// This file is the shared contract between the instruction-engine and web-viewer.
+// Do NOT change field names without updating services/instruction-engine/src/types/index.ts
+
 export type ViewMode =
   | "full_body"
   | "skeleton"
@@ -19,15 +23,17 @@ export type AnimationType =
   | "expand"
   | "contract";
 
+// Extended with front/back/top for richer mobile controls
 export type CameraAction =
   | "zoom_in"
   | "zoom_out"
   | "reset"
   | "rotate_left"
-  | "rotate_right";
+  | "rotate_right"
+  | "front"
+  | "back"
+  | "top";
 
-// This type is the contract with the instruction-engine.
-// Do not change field names without updating both sides.
 export type VisualCommand = {
   focus_region: string;
   view_mode: ViewMode;
@@ -38,3 +44,13 @@ export type VisualCommand = {
   opacity?: number;
   confidence: number;
 };
+
+// ─── Viewer → Mobile message protocol ────────────────────────────────────────
+// Messages sent FROM the web-viewer TO the React Native host via postMessage.
+// The mobile app listens for these to track viewer state.
+export type ViewerToMobileMessage =
+  | { type: "viewer_ready" }
+  | { type: "model_loading"; view_mode: ViewMode }
+  | { type: "model_loaded"; view_mode: ViewMode }
+  | { type: "viewer_error"; message: string; view_mode?: ViewMode }
+  | { type: "command_complete"; view_mode: ViewMode };

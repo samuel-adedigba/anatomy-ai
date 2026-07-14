@@ -23,7 +23,15 @@ export type AnimationType =
   | "expand"
   | "contract";
 
-export type CameraAction = "zoom_in" | "zoom_out" | "reset" | "rotate_left" | "rotate_right";
+export type CameraAction =
+  | "zoom_in"
+  | "zoom_out"
+  | "reset"
+  | "rotate_left"
+  | "rotate_right"
+  | "front"
+  | "back"
+  | "top";
 
 export type VisualCommand = {
   focus_region: string;          // e.g. "brain", "lumbar_spine"

@@ -1,0 +1,53 @@
+{
+  "name": "anatomy-ai-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest --watchAll=false",
+    "lint": "eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~55.0.11",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "^55.0.0",
+    "expo-constants": "~55.0.16",
+    "expo-font": "~55.0.8",
+    "expo-haptics": "~55.0.15",
+    "expo-linking": "~55.0.16",
+    "expo-router": "~55.0.16",
+    "expo-splash-screen": "~55.0.22",
+    "expo-status-bar": "~55.0.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-gesture-handler": "~2.30.1",
+    "react-native-reanimated": "~4.2.1",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.2",
+    "react-native-webview": "^13.16.0",
+    "react-native-worklets": "0.7.4",
+    "uuid": "^10.0.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~19.2.17",
+    "@types/uuid": "^10.0.0",
+    "babel-preset-expo": "~55.0.23",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~55.0.1",
+    "jest": "^29.7.0",
+    "jest-expo": "~55.0.19",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  }
+}

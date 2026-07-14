@@ -10,7 +10,7 @@
 
 ## Ingestion flow
 1. Add documents to `raw-docs/`
-2. Call `POST http://localhost:8000/ingest` (ai-service)
+2. Call `POST http://localhost:8001/ingest` (ai-service)
 3. LanceDB index is created/updated in `vector-db/`
 
 ## Recommended seed documents
