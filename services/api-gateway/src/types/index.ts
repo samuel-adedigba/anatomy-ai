@@ -24,6 +24,7 @@ export type VisualCommand = {
   animation: string;
   camera?: string;
   label?: string;
+  confidence: number;
 };
 
 export type ApiSuccess<T> = {

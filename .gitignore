@@ -36,3 +36,6 @@ logs/
 
 # Keep oversized local model out of git
 engines/anatomy-assets/models/full_body.glb
+claude-apps
+# anatomy-ai-services
+anatomy-ai-services-v2

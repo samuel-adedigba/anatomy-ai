@@ -75,7 +75,7 @@ describe("setQuery", () => {
 // ─── submitQuery ──────────────────────────────────────────────────────────────
 
 describe("submitQuery", () => {
-  it("sets isLoading then populates answer on success", async () => {
+  it("populates the answer and queues its command until the viewer is ready", async () => {
     useAnatomyStore.setState({ query: "What is the heart?" });
     mockAsk.mockResolvedValue({
       answer:        "The heart pumps blood.",
@@ -91,8 +91,13 @@ describe("submitQuery", () => {
     expect(state.isLoading).toBe(false);
     expect(state.answer).toBe("The heart pumps blood.");
     expect(state.hasAsked).toBe(true);
-    expect(state.currentCommand?.view_mode).toBe("heart");
+    expect(state.currentCommand).toBeNull();
+    expect(state.pendingCommand?.view_mode).toBe("heart");
     expect(state.error).toBeNull();
+
+    useAnatomyStore.getState().setViewerReady(true);
+    expect(useAnatomyStore.getState().currentCommand?.view_mode).toBe("heart");
+    expect(useAnatomyStore.getState().pendingCommand).toBeNull();
   });
 
   it("sets error and clears loading on API failure", async () => {
@@ -120,6 +125,7 @@ describe("selectSystem", () => {
   it("updates currentMode and currentCommand on success", async () => {
     const brainCmd = { ...baseVisualCmd, focus_region: "brain", view_mode: "brain" as const };
     mockCmd.mockResolvedValue(brainCmd);
+    useAnatomyStore.setState({ viewerReady: true });
 
     await useAnatomyStore.getState().selectSystem("brain");
     const state = useAnatomyStore.getState();

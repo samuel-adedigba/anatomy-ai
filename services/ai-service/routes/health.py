@@ -1,6 +1,7 @@
 import os
 import httpx
 from fastapi import APIRouter
+from rag.pipeline import _table_has_data
 
 router = APIRouter()
 
@@ -22,5 +23,6 @@ async def health() -> dict:
         "status": "ok",
         "service": "ai-service",
         "ollama_reachable": ollama_ok,
+        "knowledge_base_ready": _table_has_data(),
         "model": os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
     }

@@ -51,6 +51,30 @@ describe("askQuestion", () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("allows long-running AI requests up to 120 seconds", async () => {
+    const timeoutSpy = jest.spyOn(globalThis, "setTimeout");
+    mockFetch.mockReturnValue(jsonResponse({
+      status: true,
+      message: "ok",
+      data: {
+        answer: "Answer",
+        sources: [],
+        visualCommand: {
+          focus_region: "full_body",
+          view_mode: "full_body",
+          highlight: [],
+          animation: "none",
+          confidence: 0.3,
+        },
+      },
+    }));
+
+    await askQuestion("What is anatomy?");
+
+    expect(timeoutSpy).toHaveBeenCalledWith(expect.any(Function), 120_000);
+    timeoutSpy.mockRestore();
+  });
+
   it("throws ApiError with code 'server' on 500", async () => {
     mockFetch.mockReturnValue(jsonResponse({ message: "Internal error" }, 500));
     await expect(askQuestion("test")).rejects.toMatchObject({

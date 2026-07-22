@@ -8,14 +8,25 @@ import {
 // ─── Animation keyword map ─────────────────────────────────────
 const ANIMATION_KEYWORDS: Record<string, AnimationType> = {
   pulse: "pulse",
+  pulses: "pulse",
   beat: "pulse",
+  beats: "pulse",
   flow: "flow",
+  flows: "flow",
   wave: "wave",
+  waves: "wave",
   spread: "wave",
+  spreads: "wave",
   expand: "expand",
+  expands: "expand",
+  expanding: "expand",
   contract: "contract",
+  contracts: "contract",
+  contracting: "contract",
   flash: "highlight_flash",
+  flashes: "highlight_flash",
   highlight: "highlight_flash",
+  highlights: "highlight_flash",
 };
 
 /**

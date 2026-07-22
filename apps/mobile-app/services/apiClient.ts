@@ -4,7 +4,7 @@
  * Rules:
  *  - URL read from Expo config extra, never hardcoded in components
  *  - All errors normalised to ApiError before surfacing
- *  - Timeout handled explicitly (10 s default)
+ *  - Timeouts handled explicitly per request type
  *  - Non-2xx responses converted to ApiError
  *  - Session ID injected automatically
  */
@@ -20,13 +20,18 @@ const BASE_URL: string =
   (Constants.expoConfig?.extra?.apiGatewayUrl as string | undefined) ??
   "http://localhost:3001";
 
-const TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 10_000;
+const ASK_TIMEOUT_MS = 120_000;
 
 // ─── Internal fetch wrapper ───────────────────────────────────────────────────
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
@@ -93,7 +98,7 @@ export async function askQuestion(query: string, sessionId?: string): Promise<As
   const res = await request<AskResponse>("/ask", {
     method: "POST",
     body: JSON.stringify(body),
-  });
+  }, ASK_TIMEOUT_MS);
 
   return extractData<AskResponseData>(res, "The server returned an unexpected response.");
 }
