@@ -2,6 +2,12 @@
 
 Local-first, evidence-grounded 3D anatomy learning system.
 
+## Product direction
+
+The source of truth for the intended interactive, video-like 3D anatomy experience, the
+cardiovascular first proof, milestone gates, testing requirements, and external asset setup is
+[Anatomy AI Product Goals and Development Plan](docs/PRODUCT_GOALS_AND_DEVELOPMENT_PLAN.md).
+
 ---
 
 ## Architecture

@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { Colors, FontSize, FontWeight, Radius, Spacing, TouchTarget } from "../../constants/theme";
 import { Text } from "../atoms/Text";
+import { AnatomyIcon } from "../atoms/AppIcon";
 import { ANATOMY_SYSTEMS } from "../../constants/anatomy";
 import { ViewMode } from "../../types/viewer";
 
@@ -14,13 +15,24 @@ type Props = {
   currentMode: ViewMode;
   onSelect:    (mode: ViewMode) => void;
   disabled?:   boolean;
+  compact?:    boolean;
 };
 
-export const SystemSelector = ({ currentMode, onSelect, disabled = false }: Props) => (
+export const SystemSelector = ({
+  currentMode,
+  onSelect,
+  disabled = false,
+  compact = false,
+}: Props) => (
   <View style={styles.wrapper}>
-    <Text style={styles.sectionLabel} accessibilityRole="header">
-      Body Systems
-    </Text>
+    <View style={styles.headingRow}>
+      <Text style={styles.sectionLabel} accessibilityRole="header">
+        Explore systems
+      </Text>
+      {!compact && (
+        <Text style={styles.sectionHint}>Choose what appears in the 3D view</Text>
+      )}
+    </View>
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
@@ -46,9 +58,11 @@ export const SystemSelector = ({ currentMode, onSelect, disabled = false }: Prop
               disabled && styles.itemDisabled,
             ]}
           >
-            <Text style={styles.icon} aria-hidden>
-              {system.icon}
-            </Text>
+            <AnatomyIcon
+              mode={system.key}
+              size={19}
+              color={isActive ? Colors.cyan : Colors.textSecond}
+            />
             <Text
               style={[
                 styles.label,
@@ -67,42 +81,57 @@ export const SystemSelector = ({ currentMode, onSelect, disabled = false }: Prop
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: Spacing.xs,
+    gap:             Spacing.sm,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderWidth:     1,
+    borderColor:     Colors.border,
+    borderRadius:    Radius.lg,
+  },
+  headingRow: {
+    paddingHorizontal: Spacing.base,
+    flexDirection:     "row",
+    alignItems:        "center",
+    justifyContent:    "space-between",
+    gap:               Spacing.sm,
   },
   sectionLabel: {
-    fontSize:    FontSize.xs,
-    fontWeight:  FontWeight.medium,
-    color:       Colors.textMuted,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    paddingHorizontal: Spacing.base,
+    fontSize:   FontSize.sm,
+    fontWeight: FontWeight.semi,
+    color:      Colors.textPrimary,
+  },
+  sectionHint: {
+    flexShrink: 1,
+    fontSize:   FontSize.xs,
+    color:      Colors.textMuted,
+    textAlign:  "right",
   },
   row: {
     paddingHorizontal: Spacing.base,
     gap:               Spacing.sm,
   },
   item: {
-    minWidth:        64,
+    minWidth:        104,
     minHeight:       TouchTarget,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 9,
     paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius:    Radius.md,
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius:    Radius.full,
     borderWidth:     1,
     borderColor:     Colors.border,
+    flexDirection:   "row",
     alignItems:      "center",
     justifyContent:  "center",
-    gap:             4,
+    gap:             7,
   },
   itemActive: {
     backgroundColor: Colors.cyanDim,
-    borderColor:     Colors.cyanGlow,
+    borderColor:     Colors.cyan,
   },
-  itemPressed:  { opacity: 0.65 },
+  itemPressed:  { opacity: 0.72 },
   itemDisabled: { opacity: 0.4 },
-  icon: { fontSize: 18 },
   label: {
-    fontSize:   FontSize.xs,
+    fontSize:   FontSize.sm,
     fontWeight: FontWeight.medium,
     color:      Colors.textSecond,
   },

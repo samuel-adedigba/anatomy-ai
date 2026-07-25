@@ -3,17 +3,16 @@ import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-/** Send a message to the React Native host only when the bridge exists. */
+/** Send a message to the native WebView or browser iframe host. */
 function postToHost(msg: ViewerToMobileMessage): void {
   try {
-    if (
-      typeof window !== "undefined" &&
-      (window as any).ReactNativeWebView?.postMessage
-    ) {
+    if ((window as any).ReactNativeWebView?.postMessage) {
       (window as any).ReactNativeWebView.postMessage(JSON.stringify(msg));
+    } else if (window.parent !== window) {
+      window.parent.postMessage(msg, "*");
     }
   } catch {
-    // Non-fatal: running in browser dev mode without a WebView host
+    // Non-fatal: running in browser dev mode without an embedded host.
   }
 }
 
@@ -41,6 +40,13 @@ const container = document.getElementById("canvas-container") as HTMLElement;
 const viewSelect = document.getElementById("view-mode") as HTMLSelectElement | null;
 const loadingEl = document.getElementById("loading-overlay") as HTMLElement | null;
 const loadingLabel = document.getElementById("loading-label") as HTMLElement | null;
+const isEmbedded =
+  Boolean((window as any).ReactNativeWebView?.postMessage) ||
+  window.parent !== window;
+
+if (isEmbedded) {
+  document.body.classList.add("embedded");
+}
 
 let activeViewMode: ViewMode =
   (viewSelect?.value as ViewMode | undefined) ?? "full_body";
@@ -80,8 +86,11 @@ if (viewSelect) {
   viewSelect.addEventListener("change", () => {
     runCommand(viewSelect.value as ViewMode);
   });
+}
+
+if (!isEmbedded && viewSelect) {
   runCommand(viewSelect.value as ViewMode);
-} else {
+} else if (!isEmbedded) {
   engine.reset();
 }
 

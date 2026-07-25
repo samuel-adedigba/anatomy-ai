@@ -28,6 +28,14 @@ export class Highlighter {
     this.clear();
 
     const allMeshes = this.loader.getAllMeshes();
+    const hasMatchingTarget = allMeshes.some((mesh) =>
+      meshNames.includes(mesh.name)
+    );
+
+    // Asset providers do not always preserve semantic mesh names. Keeping the
+    // model legible is safer than dimming every mesh when a requested region
+    // cannot be resolved.
+    if (!hasMatchingTarget) return;
 
     for (const mesh of allMeshes) {
       // Save original material before modifying

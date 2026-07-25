@@ -2,16 +2,19 @@ import React from "react";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
 import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/theme";
 import { Text } from "../atoms/Text";
+import { AppIcon } from "../atoms/AppIcon";
 import { SourceRef } from "../../types/api";
 
 type Props = { source: SourceRef; index: number };
 
 export const SourceCard = ({ source, index }: Props) => {
-  const hasLink = !!source.url;
+  const safeUrl = source.url && /^https?:\/\//i.test(source.url) ? source.url : undefined;
+  const hasLink = !!safeUrl;
+  const domain = getSourceDomain(safeUrl);
 
   const handlePress = () => {
-    if (source.url) {
-      Linking.openURL(source.url).catch(() => {});
+    if (safeUrl) {
+      Linking.openURL(safeUrl).catch(() => {});
     }
   };
 
@@ -31,33 +34,46 @@ export const SourceCard = ({ source, index }: Props) => {
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{index + 1}</Text>
         </View>
-        <Text style={styles.title} numberOfLines={2}>
-          {source.title}
-        </Text>
-        {hasLink && <Text style={styles.linkIcon} aria-hidden>↗</Text>}
+        <View style={styles.titleGroup}>
+          <Text style={styles.title} numberOfLines={2}>
+            {source.title}
+          </Text>
+          {domain && <Text style={styles.domain}>{domain}</Text>}
+        </View>
+        {hasLink && <AppIcon name="open-in-new" size={17} color={Colors.cyan} />}
       </View>
       {source.snippet ? (
-        <Text style={styles.snippet} numberOfLines={3}>
+        <Text style={styles.snippet} numberOfLines={4}>
           {source.snippet}
         </Text>
       ) : null}
-      {typeof source.score === "number" ? (
-        <Text style={styles.score}>
-          Relevance: {Math.round(source.score * 100)}%
-        </Text>
-      ) : null}
+      {hasLink && (
+        <View style={styles.openRow}>
+          <AppIcon name="book-open-page-variant-outline" size={15} color={Colors.textSecond} />
+          <Text style={styles.openLabel}>Open reference</Text>
+        </View>
+      )}
     </Pressable>
   );
 };
 
+function getSourceDomain(url?: string): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceHigh,
     borderRadius:    Radius.md,
     borderWidth:     1,
     borderColor:     Colors.border,
-    padding:         Spacing.md,
-    gap:             Spacing.xs,
+    padding:         Spacing.base,
+    gap:             Spacing.sm,
   },
   header: {
     flexDirection: "row",
@@ -65,12 +81,12 @@ const styles = StyleSheet.create({
     gap:           Spacing.sm,
   },
   badge: {
-    width:           20,
-    height:          20,
-    borderRadius:    10,
-    backgroundColor: Colors.violetDim,
+    width:           26,
+    height:          26,
+    borderRadius:    13,
+    backgroundColor: Colors.cyanDim,
     borderWidth:     1,
-    borderColor:     Colors.violet,
+    borderColor:     Colors.borderActive,
     alignItems:      "center",
     justifyContent:  "center",
     flexShrink:      0,
@@ -79,30 +95,40 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize:   FontSize.xs,
     fontWeight: FontWeight.bold,
-    color:      Colors.violet,
+    color:      Colors.cyan,
+  },
+  titleGroup: {
+    flex:     1,
+    minWidth: 0,
+    gap:      2,
   },
   title: {
-    flex:       1,
     fontSize:   FontSize.sm,
-    fontWeight: FontWeight.medium,
+    fontWeight: FontWeight.semi,
     color:      Colors.textPrimary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  linkIcon: {
-    fontSize: FontSize.sm,
-    color:    Colors.cyan,
-    flexShrink: 0,
+  domain: {
+    fontSize: FontSize.xs,
+    color:    Colors.textMuted,
   },
   snippet: {
+    fontSize:   FontSize.sm,
+    color:      Colors.textSecond,
+    lineHeight: 20,
+    marginLeft: 34,
+  },
+  openRow: {
+    minHeight:     28,
+    marginLeft:    34,
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           6,
+  },
+  openLabel: {
     fontSize:   FontSize.xs,
     color:      Colors.textSecond,
-    lineHeight: 17,
-    marginLeft: 28,
+    fontWeight: FontWeight.medium,
   },
-  score: {
-    fontSize:  FontSize.xs,
-    color:     Colors.textMuted,
-    marginLeft: 28,
-  },
-  pressed: { opacity: 0.7 },
+  pressed: { opacity: 0.78, borderColor: Colors.cyan },
 });

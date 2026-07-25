@@ -1,10 +1,10 @@
 import React from "react";
 import { Pressable, PressableProps, StyleSheet, ViewStyle } from "react-native";
 import { Colors, Radius, TouchTarget } from "../../constants/theme";
-import { Text } from "./Text";
+import { AppIcon, AppIconName } from "./AppIcon";
 
 type Props = PressableProps & {
-  icon:         string; // emoji or text character
+  icon:         AppIconName;
   label:        string; // accessibility label
   size?:        number;
   variant?:     "ghost" | "filled" | "outlined";
@@ -48,21 +48,19 @@ export const IconButton = ({
       ]}
       {...props}
     >
-      <Text
-        variant="body"
-        style={{
-          fontSize: size * 0.42,
-          color: disabled
+      <AppIcon
+        name={icon}
+        size={Math.round(size * 0.45)}
+        color={
+          disabled
             ? Colors.textMuted
             : variant === "filled"
               ? Colors.textInverse
               : active
                 ? Colors.cyan
-                : Colors.textSecond,
-        }}
-      >
-        {icon}
-      </Text>
+                : Colors.textSecond
+        }
+      />
     </Pressable>
   );
 };
@@ -75,7 +73,7 @@ const styles = StyleSheet.create({
     borderWidth:    1,
     borderColor:    "transparent",
   },
-  outlined: { borderWidth: 1 },
-  pressed:  { opacity: 0.65 },
+  outlined: { borderWidth: 1, backgroundColor: Colors.surface },
+  pressed:  { opacity: 0.72, transform: [{ scale: 0.97 }] },
   disabled: { opacity: 0.35 },
 });

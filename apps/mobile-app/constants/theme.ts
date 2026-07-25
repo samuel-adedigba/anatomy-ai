@@ -3,46 +3,56 @@
  * typography, and radius values throughout Anatomy AI mobile.
  *
  * Design language:
- *   Foundation  — deep midnight navy: models are the hero, UI is supportive
- *   Accent      — medical cyan #00D4FF: precise, clinical without being cold
- *   Secondary   — deep violet #7C5CFC: hierarchy accent, used sparingly
+ *   Foundation  — deep blue-black: the anatomy model remains the visual focus
+ *   Accent      — calm medical teal: clear, trustworthy, and less neon
+ *   Surfaces    — layered slate panels with visible AA-compliant boundaries
  */
 
 export const Colors = {
   // ── Foundation ──────────────────────────────────────────────────────────────
-  bg:           "#080C14",
-  surface:      "#0F1724",
-  surfaceHigh:  "#141D2E",
-  border:       "#1E2D44",
-  borderActive: "rgba(0,212,255,0.2)",
+  bg:            "#071018",
+  canvas:        "#04090E",
+  surface:       "#0D1923",
+  surfaceHigh:   "#122330",
+  surfaceRaised: "#182C3A",
+  border:        "#294150",
+  borderStrong:  "#3B5C6D",
+  borderActive:  "rgba(78,217,198,0.42)",
 
   // ── Text ────────────────────────────────────────────────────────────────────
-  textPrimary:  "#E8EDF4",
-  textSecond:   "#8A97AA",
-  textMuted:    "#5A6478",
-  textInverse:  "#080C14",
+  textPrimary:  "#F3F8FA",
+  textSecond:   "#B8C7D0",
+  textMuted:    "#8497A3",
+  textInverse:  "#04110F",
 
   // ── Accent ──────────────────────────────────────────────────────────────────
-  cyan:         "#00D4FF",
-  cyanDim:      "rgba(0,212,255,0.10)",
-  cyanGlow:     "rgba(0,212,255,0.20)",
+  cyan:         "#4ED9C6",
+  cyanDim:      "rgba(78,217,198,0.11)",
+  cyanGlow:     "rgba(78,217,198,0.24)",
 
   // ── Secondary ───────────────────────────────────────────────────────────────
-  violet:       "#7C5CFC",
-  violetDim:    "rgba(124,92,252,0.12)",
+  violet:       "#A99AF8",
+  violetDim:    "rgba(169,154,248,0.12)",
 
   // ── Semantic ─────────────────────────────────────────────────────────────────
-  success:      "#22C55E",
-  successDim:   "rgba(34,197,94,0.12)",
-  warning:      "#F59E0B",
-  warningDim:   "rgba(245,158,11,0.12)",
-  error:        "#F43F5E",
-  errorDim:     "rgba(244,63,94,0.12)",
+  success:      "#65D892",
+  successDim:   "rgba(101,216,146,0.12)",
+  warning:      "#F7C45F",
+  warningDim:   "rgba(247,196,95,0.12)",
+  error:        "#FF7D93",
+  errorDim:     "rgba(255,125,147,0.12)",
+  info:         "#7DC7FF",
+  infoDim:      "rgba(125,199,255,0.12)",
 
   // ── Status dots ──────────────────────────────────────────────────────────────
-  online:       "#22C55E",
-  offline:      "#F43F5E",
-  degraded:     "#F59E0B",
+  online:       "#65D892",
+  offline:      "#FF7D93",
+  degraded:     "#F7C45F",
+
+  // ── Overlays ─────────────────────────────────────────────────────────────────
+  scrim:        "rgba(3,9,14,0.78)",
+  glass:        "rgba(10,22,31,0.86)",
+  whiteAlpha:   "rgba(255,255,255,0.06)",
 } as const;
 
 export const Spacing = {
@@ -57,22 +67,22 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
-  sm:   6,
-  md:   10,
-  lg:   14,
-  xl:   20,
+  sm:   8,
+  md:   12,
+  lg:   16,
+  xl:   24,
   full: 9999,
 } as const;
 
 export const FontSize = {
-  xs:   11,
-  sm:   13,
-  base: 15,
-  md:   17,
-  lg:   20,
-  xl:   24,
-  xxl:  28,
-  xxxl: 34,
+  xs:   12,
+  sm:   14,
+  base: 16,
+  md:   18,
+  lg:   21,
+  xl:   25,
+  xxl:  30,
+  xxxl: 36,
 } as const;
 
 export const FontWeight = {
@@ -84,18 +94,18 @@ export const FontWeight = {
 
 export const Shadow = {
   card: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor:   "#000",
+    shadowOffset:  { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius:  12,
+    elevation:     4,
   },
   elevated: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowColor:   "#000",
+    shadowOffset:  { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius:  24,
+    elevation:     10,
   },
 } as const;
 

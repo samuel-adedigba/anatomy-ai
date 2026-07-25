@@ -20,7 +20,7 @@ export class SceneManager {
 
     // ─── Scene ────────────────────────────────────────────────────
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0a0f);
+    this.scene.background = new THREE.Color(0x04090e);
 
     // ─── Camera ───────────────────────────────────────────────────
     this.camera = new THREE.PerspectiveCamera(

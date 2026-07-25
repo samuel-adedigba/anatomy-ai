@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/theme";
 import { Text } from "../atoms/Text";
+import { AppIcon } from "../atoms/AppIcon";
 import { ApiError } from "../../types/api";
 
 type Props = {
@@ -18,10 +19,14 @@ export const ErrorCard = ({ error, onRetry, onDismiss }: Props) => (
     accessibilityLabel={`Error: ${error.message}`}
   >
     <View style={styles.header}>
-      <Text style={styles.icon} aria-hidden>⚠️</Text>
-      <Text style={styles.title}>Something went wrong</Text>
+      <View style={styles.icon}>
+        <AppIcon name="alert-circle-outline" size={20} color={Colors.error} />
+      </View>
+      <View style={styles.copy}>
+        <Text style={styles.title}>We could not complete that request</Text>
+        <Text style={styles.body}>{error.message}</Text>
+      </View>
     </View>
-    <Text style={styles.body}>{error.message}</Text>
     <View style={styles.actions}>
       {error.retryable && onRetry && (
         <Pressable
@@ -56,15 +61,22 @@ const styles = StyleSheet.create({
     borderWidth:     1,
     borderColor:     Colors.error,
     padding:         Spacing.base,
-    margin:          Spacing.base,
-    gap:             Spacing.sm,
+    gap:             Spacing.md,
   },
   header: {
     flexDirection: "row",
-    alignItems:    "center",
-    gap:           Spacing.sm,
+    alignItems:    "flex-start",
+    gap:           Spacing.md,
   },
-  icon:  { fontSize: 18 },
+  icon: {
+    width:           38,
+    height:          38,
+    alignItems:      "center",
+    justifyContent:  "center",
+    borderRadius:    Radius.md,
+    backgroundColor: Colors.errorDim,
+  },
+  copy: { flex: 1, gap: 3 },
   title: {
     fontSize:   FontSize.base,
     fontWeight: FontWeight.semi,
@@ -81,6 +93,7 @@ const styles = StyleSheet.create({
     marginTop:     Spacing.xs,
   },
   retryBtn: {
+    minHeight:         44,
     paddingVertical:   Spacing.sm,
     paddingHorizontal: Spacing.base,
     backgroundColor:   Colors.surface,
@@ -94,6 +107,7 @@ const styles = StyleSheet.create({
     color:      Colors.error,
   },
   dismissBtn: {
+    minHeight:         44,
     paddingVertical:   Spacing.sm,
     paddingHorizontal: Spacing.base,
   },

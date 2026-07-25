@@ -16,6 +16,7 @@ import type { WebViewMessageEvent } from "react-native-webview";
 import Constants from "expo-constants";
 import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/theme";
 import { Text } from "../atoms/Text";
+import { AppIcon } from "../atoms/AppIcon";
 import { VisualCommand, ViewMode, ViewerToMobileMessage, CameraAction } from "../../types/viewer";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -108,8 +109,10 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
     if (webViewError) {
       return (
         <View style={[styles.fallback, style as object]}>
-          <Text style={styles.fallbackIcon}>⚠️</Text>
-          <Text style={styles.fallbackTitle}>Viewer unavailable</Text>
+          <View style={styles.fallbackIcon}>
+            <AppIcon name="cloud-alert-outline" size={30} color={Colors.error} />
+          </View>
+          <Text style={styles.fallbackTitle}>The 3D viewer is unavailable</Text>
           <Text style={styles.fallbackBody}>{webViewError}</Text>
           <Pressable
             onPress={() => { setWebViewError(null); setViewerReady(false); }}
@@ -118,7 +121,8 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             accessibilityLabel="Retry loading 3D viewer"
             style={styles.retryBtn}
           >
-            <Text style={styles.retryLabel}>Retry</Text>
+            <AppIcon name="restore" size={18} color={Colors.textPrimary} />
+            <Text style={styles.retryLabel}>Try again</Text>
           </Pressable>
         </View>
       );
@@ -169,16 +173,16 @@ AnatomyViewer.displayName = "AnatomyViewer";
 const styles = StyleSheet.create({
   container: {
     flex:            1,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.canvas,
     overflow:        "hidden",
   },
   webview: {
     flex:            1,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.canvas,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.canvas,
     alignItems:      "center",
     justifyContent:  "center",
     gap:             Spacing.md,
@@ -191,11 +195,18 @@ const styles = StyleSheet.create({
     flex:            1,
     alignItems:      "center",
     justifyContent:  "center",
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.canvas,
     padding:         Spacing.xxl,
     gap:             Spacing.md,
   },
-  fallbackIcon:  { fontSize: 40 },
+  fallbackIcon: {
+    width:           64,
+    height:          64,
+    alignItems:      "center",
+    justifyContent:  "center",
+    borderRadius:    Radius.xl,
+    backgroundColor: Colors.errorDim,
+  },
   fallbackTitle: {
     fontSize:   FontSize.lg,
     fontWeight: FontWeight.semi,
@@ -209,6 +220,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   retryBtn: {
+    minHeight:       44,
     marginTop:       Spacing.sm,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.xl,
@@ -216,6 +228,9 @@ const styles = StyleSheet.create({
     borderRadius:    Radius.md,
     borderWidth:     1,
     borderColor:     Colors.border,
+    flexDirection:   "row",
+    alignItems:      "center",
+    gap:             Spacing.sm,
   },
   retryLabel: {
     fontSize:   FontSize.sm,

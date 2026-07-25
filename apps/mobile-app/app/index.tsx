@@ -1,267 +1,274 @@
 /**
- * AnatomyWorkspace — primary screen of Anatomy AI mobile.
+ * AnatomyWorkspace — visual-first learning workspace.
  *
- * Layout (portrait, bottom-sheet answer pattern):
- *   AppHeader (fixed)
- *   QueryInput + suggestions (fixed)
- *   SystemSelector strip (fixed)
- *   [ErrorCard if error]
- *   AnatomyViewer (Three.js, fills remaining space)
- *   ViewerControls (fixed strip)
- *   AnswerPanel (slides up as bottom sheet when answer exists)
- *   OnboardingOverlay (first launch only)
- *   Disclaimer bar (fixed)
+ * Wide screens show the question and explanation beside the 3D stage.
+ * Narrow screens preserve space for the model and use clear tabs to switch
+ * between the 3D view and the readable explanation.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
   Keyboard,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Colors, FontSize, FontWeight, Radius, Spacing } from "../constants/theme";
+import { Colors, Spacing } from "../constants/theme";
 import { useAnatomyStore } from "../store/useAnatomyStore";
-import { getSystemByKey } from "../constants/anatomy";
 import { CameraAction, ViewMode } from "../types/viewer";
 
-import { AppHeader }         from "../components/molecules/AppHeader";
-import { QueryInput }        from "../components/molecules/QueryInput";
-import { SystemSelector }    from "../components/molecules/SystemSelector";
-import { ViewerControls }    from "../components/molecules/ViewerControls";
-import { AnatomyViewer, AnatomyViewerHandle } from "../components/organisms/AnatomyViewer";
-import { AnswerPanel }       from "../components/organisms/AnswerPanel";
-import { ErrorCard }         from "../components/organisms/ErrorCard";
+import { AppHeader } from "../components/molecules/AppHeader";
+import { QueryInput } from "../components/molecules/QueryInput";
+import { SystemSelector } from "../components/molecules/SystemSelector";
+import {
+  WorkspacePane,
+  WorkspaceTabs,
+} from "../components/molecules/WorkspaceTabs";
+import { AnatomyViewerHandle } from "../components/organisms/AnatomyViewer";
+import { AnswerPanel } from "../components/organisms/AnswerPanel";
+import { ErrorCard } from "../components/organisms/ErrorCard";
 import { OnboardingOverlay } from "../components/organisms/OnboardingOverlay";
-import { Text }              from "../components/atoms/Text";
+import { ViewerStage } from "../components/organisms/ViewerStage";
+
+const WIDE_WORKSPACE_BREAKPOINT = 980;
 
 export default function AnatomyWorkspace() {
-  const insets    = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const viewerRef = useRef<AnatomyViewerHandle>(null);
-  const panelAnim = useRef(new Animated.Value(0)).current;
+  const isWide = width >= WIDE_WORKSPACE_BREAKPOINT;
 
-  // ── Store slice ────────────────────────────────────────────────────────────
-  const query               = useAnatomyStore((s) => s.query);
-  const answer              = useAnatomyStore((s) => s.answer);
-  const sources             = useAnatomyStore((s) => s.sources);
-  const isLoading           = useAnatomyStore((s) => s.isLoading);
-  const error               = useAnatomyStore((s) => s.error);
-  const hasAsked            = useAnatomyStore((s) => s.hasAsked);
-  const currentCommand      = useAnatomyStore((s) => s.currentCommand);
-  const currentMode         = useAnatomyStore((s) => s.currentMode);
-  const viewerReady         = useAnatomyStore((s) => s.viewerReady);
-  const serviceHealth       = useAnatomyStore((s) => s.serviceHealth);
-  const onboardingDismissed = useAnatomyStore((s) => s.onboardingDismissed);
+  const query = useAnatomyStore((state) => state.query);
+  const answer = useAnatomyStore((state) => state.answer);
+  const sources = useAnatomyStore((state) => state.sources);
+  const isLoading = useAnatomyStore((state) => state.isLoading);
+  const error = useAnatomyStore((state) => state.error);
+  const currentCommand = useAnatomyStore((state) => state.currentCommand);
+  const currentMode = useAnatomyStore((state) => state.currentMode);
+  const viewerReady = useAnatomyStore((state) => state.viewerReady);
+  const serviceHealth = useAnatomyStore((state) => state.serviceHealth);
+  const onboardingDismissed = useAnatomyStore(
+    (state) => state.onboardingDismissed
+  );
 
-  const setQuery          = useAnatomyStore((s) => s.setQuery);
-  const submitQuery       = useAnatomyStore((s) => s.submitQuery);
-  const clearAnswer       = useAnatomyStore((s) => s.clearAnswer);
-  const selectSystem      = useAnatomyStore((s) => s.selectSystem);
-  const setViewerReady    = useAnatomyStore((s) => s.setViewerReady);
-  const setViewerLoading  = useAnatomyStore((s) => s.setViewerLoading);
-  const setCurrentMode    = useAnatomyStore((s) => s.setCurrentMode);
-  const dismissOnboarding = useAnatomyStore((s) => s.dismissOnboarding);
-  const refreshHealth     = useAnatomyStore((s) => s.refreshHealth);
-  const hydrate           = useAnatomyStore((s) => s.hydrate);
-  const retry             = useAnatomyStore((s) => s.retry);
+  const setQuery = useAnatomyStore((state) => state.setQuery);
+  const submitQuery = useAnatomyStore((state) => state.submitQuery);
+  const clearAnswer = useAnatomyStore((state) => state.clearAnswer);
+  const selectSystem = useAnatomyStore((state) => state.selectSystem);
+  const setViewerReady = useAnatomyStore((state) => state.setViewerReady);
+  const setViewerLoading = useAnatomyStore((state) => state.setViewerLoading);
+  const setCurrentMode = useAnatomyStore((state) => state.setCurrentMode);
+  const dismissOnboarding = useAnatomyStore(
+    (state) => state.dismissOnboarding
+  );
+  const refreshHealth = useAnatomyStore((state) => state.refreshHealth);
+  const hydrate = useAnatomyStore((state) => state.hydrate);
+  const retry = useAnatomyStore((state) => state.retry);
 
   const [modelLoadingMode, setModelLoadingMode] = useState<ViewMode | null>(null);
-  const [panelVisible,     setPanelVisible]     = useState(false);
+  const [activePane, setActivePane] = useState<WorkspacePane>("viewer");
 
-  // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
     hydrate();
     refreshHealth();
-    const id = setInterval(refreshHealth, 30_000);
-    return () => clearInterval(id);
+    const healthInterval = setInterval(refreshHealth, 30_000);
+    return () => clearInterval(healthInterval);
+    // Store actions are stable for the lifetime of the app.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Forward visual commands to viewer ──────────────────────────────────────
   useEffect(() => {
     if (currentCommand && viewerRef.current && viewerReady) {
       viewerRef.current.sendCommand(currentCommand);
     }
   }, [currentCommand, viewerReady]);
 
-  // ── Answer panel slide animation ───────────────────────────────────────────
-  useEffect(() => {
-    if (hasAsked && answer) {
-      setPanelVisible(true);
-      Animated.spring(panelAnim, {
-        toValue: 1, useNativeDriver: true, tension: 80, friction: 11,
-      }).start();
-    } else {
-      Animated.timing(panelAnim, {
-        toValue: 0, duration: 200, useNativeDriver: true,
-      }).start(() => setPanelVisible(false));
-    }
-  }, [hasAsked, answer, panelAnim]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
     Keyboard.dismiss();
+    setActivePane("viewer");
     submitQuery();
   }, [submitQuery]);
 
-  const handleSystemSelect = useCallback(async (mode: ViewMode) => {
-    clearAnswer();
-    await selectSystem(mode);
-  }, [selectSystem, clearAnswer]);
+  const handleSystemSelect = useCallback(
+    async (mode: ViewMode) => {
+      setActivePane("viewer");
+      clearAnswer();
+      await selectSystem(mode);
+    },
+    [clearAnswer, selectSystem]
+  );
 
-  const handleCameraControl = useCallback((action: CameraAction) => {
-    viewerRef.current?.sendCamera(action, currentMode);
-  }, [currentMode]);
+  const handleCameraControl = useCallback(
+    (action: CameraAction) => {
+      viewerRef.current?.sendCamera(action, currentMode);
+    },
+    [currentMode]
+  );
 
-  const handleClosePanel = useCallback(() => clearAnswer(), [clearAnswer]);
+  const handleViewerReady = useCallback(() => {
+    setViewerReady(true);
+    viewerRef.current?.sendCamera("reset", currentMode);
+  }, [currentMode, setViewerReady]);
 
-  const handleViewerReady     = useCallback(() => setViewerReady(true),          [setViewerReady]);
-  const handleModelLoading    = useCallback((mode: ViewMode) => {
-    setViewerLoading(true);
-    setModelLoadingMode(mode);
-  }, [setViewerLoading]);
-  const handleModelLoaded     = useCallback((mode: ViewMode) => {
+  const handleModelLoading = useCallback(
+    (mode: ViewMode) => {
+      setViewerLoading(true);
+      setModelLoadingMode(mode);
+    },
+    [setViewerLoading]
+  );
+
+  const handleModelLoaded = useCallback(
+    (mode: ViewMode) => {
+      setViewerLoading(false);
+      setModelLoadingMode(null);
+      setCurrentMode(mode);
+    },
+    [setCurrentMode, setViewerLoading]
+  );
+
+  const handleViewerError = useCallback(() => {
     setViewerLoading(false);
     setModelLoadingMode(null);
-    setCurrentMode(mode);
-  }, [setViewerLoading, setCurrentMode]);
-  const handleViewerError     = useCallback(() => {
-    setViewerLoading(false);
-    setModelLoadingMode(null);
   }, [setViewerLoading]);
 
-  const handleDismissError    = useCallback(() => clearAnswer(), [clearAnswer]);
+  const viewerStage = (
+    <ViewerStage
+      ref={viewerRef}
+      currentMode={currentMode}
+      modelLoadingMode={modelLoadingMode}
+      isProcessing={isLoading}
+      viewerReady={viewerReady}
+      onReady={handleViewerReady}
+      onModelLoading={handleModelLoading}
+      onModelLoaded={handleModelLoaded}
+      onError={handleViewerError}
+      onControl={handleCameraControl}
+      style={styles.fill}
+    />
+  );
 
-  const currentSystem = getSystemByKey(currentMode);
+  const answerPanel = (
+    <AnswerPanel
+      answer={answer}
+      sources={sources}
+      isLoading={isLoading}
+      onClear={clearAnswer}
+      style={styles.fill}
+    />
+  );
 
   return (
-    <View style={[styles.root, { paddingBottom: insets.bottom }]}>
-
-      {/* ─ App header ─────────────────────────────────────────────────────── */}
+    <View style={styles.root}>
       <AppHeader serviceHealth={serviceHealth} />
 
-      {/* ─ Query input ────────────────────────────────────────────────────── */}
-      <View style={styles.inputSection}>
-        <QueryInput
-          value={query}
-          onChangeText={setQuery}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-          disabled={serviceHealth === "offline"}
-        />
-      </View>
+      <View
+        style={[
+          styles.workspace,
+          isWide ? styles.workspaceWide : styles.workspaceNarrow,
+          { paddingBottom: Math.max(insets.bottom, Spacing.md) },
+        ]}
+      >
+        {isWide ? (
+          <>
+            <View style={styles.sidePanel}>
+              <QueryInput
+                value={query}
+                onChangeText={setQuery}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                disabled={serviceHealth === "offline"}
+              />
 
-      {/* ─ System selector ────────────────────────────────────────────────── */}
-      <View style={styles.selectorSection}>
-        <SystemSelector
-          currentMode={currentMode}
-          onSelect={handleSystemSelect}
-          disabled={isLoading}
-        />
-      </View>
+              <SystemSelector
+                currentMode={currentMode}
+                onSelect={handleSystemSelect}
+                disabled={isLoading}
+              />
 
-      {/* ─ API error card ─────────────────────────────────────────────────── */}
-      {error && (
-        <ErrorCard
-          error={error}
-          onRetry={error.retryable ? retry : undefined}
-          onDismiss={handleDismissError}
-        />
-      )}
+              {error && (
+                <ErrorCard
+                  error={error}
+                  onRetry={error.retryable ? retry : undefined}
+                  onDismiss={clearAnswer}
+                />
+              )}
 
-      {/* ─ 3D viewer (flex 1, always rendered) ───────────────────────────── */}
-      <View style={styles.viewerWrapper}>
-        {/* Current mode badge */}
-        <View
-          style={styles.modeBadge}
-          accessible
-          accessibilityLabel={`Viewing: ${currentSystem.label}`}
-        >
-          <Text style={styles.modeIcon} aria-hidden>{currentSystem.icon}</Text>
-          <Text style={styles.modeLabel}>{currentSystem.label}</Text>
-          {modelLoadingMode && (
-            <ActivityIndicator
-              size="small"
-              color={Colors.cyan}
-              style={{ marginLeft: Spacing.xs }}
-              accessibilityLabel={`Loading ${modelLoadingMode} model`}
-            />
-          )}
-        </View>
+              <View style={styles.sideAnswer}>{answerPanel}</View>
+            </View>
 
-        <AnatomyViewer
-          ref={viewerRef}
-          style={styles.viewer}
-          onReady={handleViewerReady}
-          onModelLoading={handleModelLoading}
-          onModelLoaded={handleModelLoaded}
-          onError={handleViewerError}
-        />
+            <View style={styles.visualColumn}>{viewerStage}</View>
+          </>
+        ) : (
+          <>
+            <View style={styles.mobileControls}>
+              <QueryInput
+                value={query}
+                onChangeText={setQuery}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                disabled={serviceHealth === "offline"}
+                compact
+              />
 
-        {/* Processing overlay while AI request is in-flight */}
-        {isLoading && (
-          <View
-            style={styles.aiOverlay}
-            accessible
-            accessibilityRole="progressbar"
-            accessibilityLabel="Processing your anatomy question"
-            pointerEvents="none"
-          >
-            <ActivityIndicator size="large" color={Colors.cyan} />
-            <Text style={styles.aiOverlayText}>Analysing your question…</Text>
-          </View>
+              <SystemSelector
+                currentMode={currentMode}
+                onSelect={handleSystemSelect}
+                disabled={isLoading}
+                compact
+              />
+
+              {error && (
+                <ErrorCard
+                  error={error}
+                  onRetry={error.retryable ? retry : undefined}
+                  onDismiss={clearAnswer}
+                />
+              )}
+
+              <WorkspaceTabs
+                activePane={activePane}
+                onChange={setActivePane}
+                sourceCount={sources.length}
+                hasAnswer={answer.length > 0}
+              />
+            </View>
+
+            <View style={styles.mobileContent}>
+              <View
+                style={[
+                  styles.mobilePane,
+                  activePane !== "viewer" && styles.hiddenPane,
+                ]}
+                accessibilityElementsHidden={activePane !== "viewer"}
+                importantForAccessibility={
+                  activePane !== "viewer" ? "no-hide-descendants" : "auto"
+                }
+              >
+                {viewerStage}
+              </View>
+              <View
+                style={[
+                  styles.mobilePane,
+                  activePane !== "answer" && styles.hiddenPane,
+                ]}
+                accessibilityElementsHidden={activePane !== "answer"}
+                importantForAccessibility={
+                  activePane !== "answer" ? "no-hide-descendants" : "auto"
+                }
+              >
+                {answerPanel}
+              </View>
+            </View>
+          </>
         )}
       </View>
 
-      {/* ─ Camera controls ────────────────────────────────────────────────── */}
-      <ViewerControls
-        onControl={handleCameraControl}
-        disabled={!viewerReady}
-      />
-
-      {/* ─ Answer panel (animated bottom sheet) ──────────────────────────── */}
-      {panelVisible && (
-        <Animated.View
-          style={[
-            styles.answerPanel,
-            {
-              transform: [{
-                translateY: panelAnim.interpolate({
-                  inputRange:  [0, 1],
-                  outputRange: [320, 0],
-                }),
-              }],
-              opacity: panelAnim,
-            },
-          ]}
-        >
-          <AnswerPanel
-            answer={answer}
-            sources={sources}
-            onClose={handleClosePanel}
-          />
-        </Animated.View>
-      )}
-
-      {/* ─ Onboarding overlay ────────────────────────────────────────────── */}
       {!onboardingDismissed && (
         <OnboardingOverlay onDismiss={dismissOnboarding} />
       )}
-
-      {/* ─ Persistent disclaimer bar ─────────────────────────────────────── */}
-      <View
-        style={styles.disclaimer}
-        accessible
-        accessibilityRole="text"
-        accessibilityLabel="This tool is for anatomy education. It does not diagnose conditions or provide treatment advice."
-      >
-        <Text style={styles.disclaimerText}>
-          For anatomy education only · Not medical advice
-        </Text>
-      </View>
     </View>
   );
 }
@@ -269,70 +276,58 @@ export default function AnatomyWorkspace() {
 const styles = StyleSheet.create({
   root: {
     flex:            1,
+    minHeight:       0,
     backgroundColor: Colors.bg,
   },
-  inputSection: {
-    paddingTop: Spacing.xs,
+  workspace: {
+    flex:      1,
+    minHeight: 0,
+    width:     "100%",
+    maxWidth:  1800,
+    alignSelf: "center",
   },
-  selectorSection: {
-    paddingBottom: Spacing.xs,
-  },
-  viewerWrapper: {
-    flex:     1,
-    position: "relative",
-  },
-  viewer: { flex: 1 },
-  modeBadge: {
-    position:          "absolute",
-    top:               Spacing.md,
-    left:              Spacing.md,
-    zIndex:            10,
+  workspaceWide: {
     flexDirection:     "row",
-    alignItems:        "center",
-    gap:               Spacing.xs,
-    backgroundColor:   "rgba(8,12,20,0.78)",
-    borderWidth:       1,
-    borderColor:       Colors.border,
-    borderRadius:      Radius.full,
-    paddingVertical:   5,
+    gap:               Spacing.lg,
+    paddingTop:        Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
+  workspaceNarrow: {
+    gap:               Spacing.md,
+    paddingTop:        Spacing.md,
     paddingHorizontal: Spacing.md,
   },
-  modeIcon:  { fontSize: 14 },
-  modeLabel: {
-    fontSize:   FontSize.xs,
-    fontWeight: FontWeight.medium,
-    color:      Colors.textPrimary,
-    letterSpacing: 0.2,
+  sidePanel: {
+    width:     410,
+    maxWidth:  "42%",
+    minHeight: 0,
+    gap:       Spacing.md,
   },
-  aiOverlay: {
+  sideAnswer: {
+    flex:      1,
+    minHeight: 240,
+  },
+  visualColumn: {
+    flex:      1,
+    minWidth:  0,
+    minHeight: 0,
+  },
+  mobileControls: {
+    gap: Spacing.sm,
+  },
+  mobileContent: {
+    flex:      1,
+    minHeight: 0,
+    position:  "relative",
+  },
+  mobilePane: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,12,20,0.70)",
-    alignItems:      "center",
-    justifyContent:  "center",
-    gap:             Spacing.md,
-    zIndex:          20,
   },
-  aiOverlayText: {
-    fontSize: FontSize.sm,
-    color:    Colors.textSecond,
+  hiddenPane: {
+    display: "none",
   },
-  answerPanel: {
-    position: "absolute",
-    bottom:   0,
-    left:     0,
-    right:    0,
-    zIndex:   50,
-  },
-  disclaimer: {
-    paddingVertical:   Spacing.xs,
-    paddingHorizontal: Spacing.base,
-    backgroundColor:   Colors.bg,
-    borderTopWidth:    1,
-    borderTopColor:    Colors.border,
-  },
-  disclaimerText: {
-    fontSize:  FontSize.xs,
-    color:     Colors.textMuted,
-    textAlign: "center",
+  fill: {
+    flex:      1,
+    minHeight: 0,
   },
 });

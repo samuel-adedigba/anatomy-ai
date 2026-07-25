@@ -49,11 +49,11 @@ export const Chip = ({
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight:       TouchTarget * 0.75,
-    paddingVertical: 6,
+    minHeight:       TouchTarget,
+    paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius:    Radius.full,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceHigh,
     borderWidth:     1,
     borderColor:     Colors.border,
     alignItems:      "center",
@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
   },
   active: {
     backgroundColor: Colors.cyanDim,
-    borderColor:     Colors.cyanGlow,
+    borderColor:     Colors.cyan,
   },
   disabled: { opacity: 0.4 },
-  pressed:  { opacity: 0.6 },
+  pressed:  { opacity: 0.72 },
 });
