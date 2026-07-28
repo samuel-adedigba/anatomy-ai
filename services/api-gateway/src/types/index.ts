@@ -1,5 +1,7 @@
 // ─── Shared types across the gateway ───────────────────────────
 
+import type { ScenePlan } from "./scenePlan.generated";
+
 export type AskRequestBody = {
   query: string;
   sessionId?: string;
@@ -9,6 +11,7 @@ export type AskResponse = {
   answer: string;
   sources: SourceRef[];
   visualCommand: VisualCommand;
+  scenePlan?: ScenePlan;
 };
 
 export type SourceRef = {

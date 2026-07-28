@@ -1,5 +1,11 @@
 import { VisualEngine } from "./VisualEngine";
 import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
+import { ScenePlan } from "./visual-scene/scenePlan.generated";
+import {
+  renderScenePlanError,
+  renderScenePlanSteps,
+} from "./visual-scene/ScenePlanSteps";
+import { validateScenePlan } from "./visual-scene/scenePlanValidator";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -94,14 +100,35 @@ if (!isEmbedded && viewSelect) {
   engine.reset();
 }
 
+if (!isEmbedded) {
+  loadDeterministicCardiovascularFixture();
+}
+
 // ─── WebView message bridge ──────────────────────────────────────────────────
 // Receives VisualCommand JSON from React Native via postMessage.
 
 window.addEventListener("message", async (event: MessageEvent) => {
   try {
+    if (!isTrustedHostMessage(event)) return;
+
     const payload = event.data;
     const parsed: unknown =
       typeof payload === "string" ? JSON.parse(payload) : payload;
+
+    if (isPotentialScenePlan(parsed)) {
+      const result = validateScenePlan(parsed);
+      if (!result.success) {
+        const message = result.issues
+          .map((issue) => `${issue.path}: ${issue.message}`)
+          .join(" ");
+        renderScenePlanError(message);
+        postToHost({ type: "viewer_error", message });
+        return;
+      }
+
+      renderScenePlanSteps(result.plan);
+      return;
+    }
 
     if (!isValidCommand(parsed)) {
       console.warn("[web-viewer] Ignored invalid command:", parsed);
@@ -140,6 +167,21 @@ window.addEventListener("message", async (event: MessageEvent) => {
   }
 };
 
+(window as any).loadScenePlan = (input: unknown): ScenePlan | null => {
+  const result = validateScenePlan(input);
+  if (!result.success) {
+    const message = result.issues
+      .map((issue) => `${issue.path}: ${issue.message}`)
+      .join(" ");
+    renderScenePlanError(message);
+    console.warn("[web-viewer] Invalid scene plan:", result.issues);
+    return null;
+  }
+
+  renderScenePlanSteps(result.plan);
+  return result.plan;
+};
+
 // Notify host that the viewer is ready
 postToHost({ type: "viewer_ready" });
 console.log("[web-viewer] Visual engine ready — postMessage bridge active");
@@ -160,4 +202,47 @@ function preserveViewModeForCameraCommand(
   }
 
   return { ...command, view_mode: currentViewMode };
+}
+
+function isPotentialScenePlan(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    ("schema_version" in value || "tracks" in value || "steps" in value)
+  );
+}
+
+function isTrustedHostMessage(event: MessageEvent): boolean {
+  if ((window as any).ReactNativeWebView?.postMessage) {
+    return true;
+  }
+
+  return window.parent !== window && event.source === window.parent;
+}
+
+async function loadDeterministicCardiovascularFixture(): Promise<void> {
+  try {
+    const response = await fetch(
+      "/visual-scene/fixtures/cardiovascular.normal-circulation.v1.json"
+    );
+    if (!response.ok) {
+      throw new Error(`Fixture request failed with status ${response.status}.`);
+    }
+
+    const result = validateScenePlan(await response.json());
+    if (!result.success) {
+      throw new Error(
+        result.issues
+          .map((issue) => `${issue.path}: ${issue.message}`)
+          .join(" ")
+      );
+    }
+    renderScenePlanSteps(result.plan);
+  } catch (error) {
+    renderScenePlanError(
+      error instanceof Error
+        ? error.message
+        : "The deterministic cardiovascular fixture could not be loaded."
+    );
+  }
 }

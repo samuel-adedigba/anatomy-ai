@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "states": {
+    "default_tissue": {
+      "label": "Anatomical tissue",
+      "color": "#B76E79",
+      "meaning": "Default educational anatomy material"
+    },
+    "selected_structure": {
+      "label": "Selected structure",
+      "color": "#F6C85F",
+      "meaning": "The structure currently being identified"
+    },
+    "oxygen_poor_blood": {
+      "label": "Oxygen-poor blood",
+      "color": "#4F7FC7",
+      "meaning": "Educational convention for blood returning from the body or travelling to the lungs"
+    },
+    "oxygen_rich_blood": {
+      "label": "Oxygen-rich blood",
+      "color": "#D65A5A",
+      "meaning": "Educational convention for blood returning from the lungs or travelling to the body"
+    }
+  },
+  "disclosure": "Flow colors are educational conventions. Blood is not literally bright blue or bright red."
+}

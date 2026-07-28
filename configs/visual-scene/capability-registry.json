@@ -1,0 +1,201 @@
+{
+  "schema_version": "1.0",
+  "registry_version": "1.0.0",
+  "actions": [
+    "play_clip",
+    "play_morph",
+    "particle_flow",
+    "signal_propagation",
+    "highlight",
+    "set_material_state",
+    "fade",
+    "show_label",
+    "camera_focus",
+    "camera_orbit",
+    "wait"
+  ],
+  "topics": [
+    "cardiovascular_system",
+    "general_anatomy"
+  ],
+  "assets": [
+    "heart.educational.v1",
+    "circulation.major-vessels.v1"
+  ],
+  "targets": [
+    "heart",
+    "heart.right_atrium",
+    "heart.right_ventricle",
+    "heart.left_atrium",
+    "heart.left_ventricle",
+    "heart.tricuspid_valve",
+    "heart.pulmonary_valve",
+    "heart.mitral_valve",
+    "heart.aortic_valve",
+    "heart.vena_cavae",
+    "heart.pulmonary_artery",
+    "heart.pulmonary_veins",
+    "heart.aorta",
+    "circulation.pulmonary",
+    "circulation.systemic",
+    "camera.heart_overview",
+    "camera.right_heart",
+    "camera.left_heart"
+  ],
+  "clips": [
+    "normal_cardiac_cycle"
+  ],
+  "morphs": [
+    "atrial_systole",
+    "ventricular_systole"
+  ],
+  "paths": [
+    "body_to_right_atrium",
+    "right_ventricle_to_lungs",
+    "lungs_to_left_atrium",
+    "left_ventricle_to_body"
+  ],
+  "states": [
+    "default_tissue",
+    "selected_structure",
+    "oxygen_poor_blood",
+    "oxygen_rich_blood"
+  ],
+  "text_keys": [
+    "heart.right_atrium",
+    "heart.right_ventricle",
+    "heart.left_atrium",
+    "heart.left_ventricle",
+    "heart.tricuspid_valve",
+    "heart.pulmonary_valve",
+    "heart.mitral_valve",
+    "heart.aortic_valve"
+  ],
+  "view_modes": [
+    "full_body",
+    "skeleton",
+    "muscular",
+    "nervous_system",
+    "circulatory",
+    "respiratory",
+    "digestive",
+    "brain",
+    "heart",
+    "spine"
+  ],
+  "constraints": {
+    "max_required_assets": 8,
+    "max_tracks": 128,
+    "max_steps": 64,
+    "max_evidence_refs": 32,
+    "target_assets": {
+      "heart": "heart.educational.v1",
+      "heart.right_atrium": "heart.educational.v1",
+      "heart.right_ventricle": "heart.educational.v1",
+      "heart.left_atrium": "heart.educational.v1",
+      "heart.left_ventricle": "heart.educational.v1",
+      "heart.tricuspid_valve": "heart.educational.v1",
+      "heart.pulmonary_valve": "heart.educational.v1",
+      "heart.mitral_valve": "heart.educational.v1",
+      "heart.aortic_valve": "heart.educational.v1",
+      "heart.vena_cavae": "heart.educational.v1",
+      "heart.pulmonary_artery": "heart.educational.v1",
+      "heart.pulmonary_veins": "heart.educational.v1",
+      "heart.aorta": "heart.educational.v1",
+      "circulation.pulmonary": "circulation.major-vessels.v1",
+      "circulation.systemic": "circulation.major-vessels.v1"
+    },
+    "clip_targets": {
+      "normal_cardiac_cycle": [
+        "heart"
+      ]
+    },
+    "morph_targets": {
+      "atrial_systole": [
+        "heart",
+        "heart.right_atrium",
+        "heart.left_atrium"
+      ],
+      "ventricular_systole": [
+        "heart",
+        "heart.right_ventricle",
+        "heart.left_ventricle"
+      ]
+    },
+    "flow_paths": {
+      "body_to_right_atrium": {
+        "target": "circulation.systemic",
+        "state": "oxygen_poor_blood",
+        "required_assets": [
+          "heart.educational.v1",
+          "circulation.major-vessels.v1"
+        ]
+      },
+      "right_ventricle_to_lungs": {
+        "target": "circulation.pulmonary",
+        "state": "oxygen_poor_blood",
+        "required_assets": [
+          "heart.educational.v1",
+          "circulation.major-vessels.v1"
+        ]
+      },
+      "lungs_to_left_atrium": {
+        "target": "circulation.pulmonary",
+        "state": "oxygen_rich_blood",
+        "required_assets": [
+          "heart.educational.v1",
+          "circulation.major-vessels.v1"
+        ]
+      },
+      "left_ventricle_to_body": {
+        "target": "circulation.systemic",
+        "state": "oxygen_rich_blood",
+        "required_assets": [
+          "heart.educational.v1",
+          "circulation.major-vessels.v1"
+        ]
+      }
+    },
+    "camera_targets": [
+      "camera.heart_overview",
+      "camera.right_heart",
+      "camera.left_heart"
+    ],
+    "material_targets": [
+      "heart",
+      "heart.right_atrium",
+      "heart.right_ventricle",
+      "heart.left_atrium",
+      "heart.left_ventricle",
+      "heart.tricuspid_valve",
+      "heart.pulmonary_valve",
+      "heart.mitral_valve",
+      "heart.aortic_valve",
+      "heart.vena_cavae",
+      "heart.pulmonary_artery",
+      "heart.pulmonary_veins",
+      "heart.aorta",
+      "circulation.pulmonary",
+      "circulation.systemic"
+    ],
+    "conflict_groups": {
+      "material_state": [
+        "highlight",
+        "set_material_state",
+        "fade"
+      ],
+      "camera_motion": [
+        "camera_focus",
+        "camera_orbit"
+      ]
+    }
+  },
+  "runtime_availability": {
+    "status": "blocked",
+    "reason": "The current heart and circulatory GLBs do not contain the registered semantic nodes, animation clips, morph targets, or reviewed flow paths.",
+    "unavailable_assets": [
+      "heart.educational.v1",
+      "circulation.major-vessels.v1"
+    ]
+  }
+}

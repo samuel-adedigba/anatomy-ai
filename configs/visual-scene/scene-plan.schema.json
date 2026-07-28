@@ -1,0 +1,750 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anatomy-ai.local/schemas/scene-plan.v1.json",
+  "title": "Anatomy AI ScenePlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "capability_registry_version",
+    "plan_id",
+    "topic",
+    "learning_objective",
+    "duration_ms",
+    "loop",
+    "required_assets",
+    "tracks",
+    "steps",
+    "evidence_refs",
+    "fallback"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "capability_registry_version": {
+      "const": "1.0.0"
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$",
+      "maxLength": 120
+    },
+    "topic": {
+      "enum": [
+        "cardiovascular_system",
+        "general_anatomy"
+      ]
+    },
+    "learning_objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 600000
+    },
+    "loop": {
+      "type": "boolean"
+    },
+    "required_assets": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "heart.educational.v1",
+          "circulation.major-vessels.v1"
+        ]
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/track"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "fallback": {
+      "$ref": "#/$defs/fallback"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["target", "action"],
+              "properties": {
+                "target": {
+                  "type": "string",
+                  "pattern": "^heart(?:\\.|$)"
+                },
+                "action": {
+                  "not": { "const": "wait" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "required_assets": {
+            "type": "array",
+            "contains": { "const": "heart.educational.v1" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["target", "action"],
+              "properties": {
+                "target": {
+                  "enum": [
+                    "circulation.pulmonary",
+                    "circulation.systemic"
+                  ]
+                },
+                "action": {
+                  "not": { "const": "wait" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "required_assets": {
+            "type": "array",
+            "contains": { "const": "circulation.major-vessels.v1" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["action"],
+              "properties": {
+                "action": {
+                  "enum": [
+                    "particle_flow",
+                    "signal_propagation"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "required_assets": {
+            "type": "array",
+            "allOf": [
+              {
+                "type": "array",
+                "contains": { "const": "heart.educational.v1" }
+              },
+              {
+                "type": "array",
+                "contains": {
+                  "const": "circulation.major-vessels.v1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+      "maxLength": 120
+    },
+    "target": {
+      "enum": [
+        "heart",
+        "heart.right_atrium",
+        "heart.right_ventricle",
+        "heart.left_atrium",
+        "heart.left_ventricle",
+        "heart.tricuspid_valve",
+        "heart.pulmonary_valve",
+        "heart.mitral_valve",
+        "heart.aortic_valve",
+        "heart.vena_cavae",
+        "heart.pulmonary_artery",
+        "heart.pulmonary_veins",
+        "heart.aorta",
+        "circulation.pulmonary",
+        "circulation.systemic",
+        "camera.heart_overview",
+        "camera.right_heart",
+        "camera.left_heart"
+      ]
+    },
+    "trackBase": {
+      "type": "object",
+      "required": [
+        "id",
+        "target",
+        "action",
+        "start_ms",
+        "duration_ms"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "action": {
+          "enum": [
+            "play_clip",
+            "play_morph",
+            "particle_flow",
+            "signal_propagation",
+            "highlight",
+            "set_material_state",
+            "fade",
+            "show_label",
+            "camera_focus",
+            "camera_orbit",
+            "wait"
+          ]
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "track": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "clip",
+                "loop"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": { "const": "heart" },
+                "action": { "const": "play_clip" },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "clip": { "enum": ["normal_cardiac_cycle"] },
+                "loop": { "type": "boolean" }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "morph",
+                "from",
+                "to"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "heart",
+                    "heart.right_atrium",
+                    "heart.right_ventricle",
+                    "heart.left_atrium",
+                    "heart.left_ventricle"
+                  ]
+                },
+                "action": { "const": "play_morph" },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "morph": { "enum": ["atrial_systole", "ventricular_systole"] },
+                "from": { "type": "number", "minimum": 0, "maximum": 1 },
+                "to": { "type": "number", "minimum": 0, "maximum": 1 }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "morph": { "const": "atrial_systole" },
+                    "target": {
+                      "enum": [
+                        "heart",
+                        "heart.right_atrium",
+                        "heart.left_atrium"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "morph": { "const": "ventricular_systole" },
+                    "target": {
+                      "enum": [
+                        "heart",
+                        "heart.right_ventricle",
+                        "heart.left_ventricle"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "path",
+                "state"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "circulation.pulmonary",
+                    "circulation.systemic"
+                  ]
+                },
+                "action": { "enum": ["particle_flow", "signal_propagation"] },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "path": {
+                  "enum": [
+                    "body_to_right_atrium",
+                    "right_ventricle_to_lungs",
+                    "lungs_to_left_atrium",
+                    "left_ventricle_to_body"
+                  ]
+                },
+                "state": {
+                  "enum": [
+                    "oxygen_poor_blood",
+                    "oxygen_rich_blood"
+                  ]
+                }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "path": { "const": "body_to_right_atrium" },
+                    "target": { "const": "circulation.systemic" },
+                    "state": { "const": "oxygen_poor_blood" }
+                  }
+                },
+                {
+                  "properties": {
+                    "path": { "const": "right_ventricle_to_lungs" },
+                    "target": { "const": "circulation.pulmonary" },
+                    "state": { "const": "oxygen_poor_blood" }
+                  }
+                },
+                {
+                  "properties": {
+                    "path": { "const": "lungs_to_left_atrium" },
+                    "target": { "const": "circulation.pulmonary" },
+                    "state": { "const": "oxygen_rich_blood" }
+                  }
+                },
+                {
+                  "properties": {
+                    "path": { "const": "left_ventricle_to_body" },
+                    "target": { "const": "circulation.systemic" },
+                    "state": { "const": "oxygen_rich_blood" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "state"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "heart",
+                    "heart.right_atrium",
+                    "heart.right_ventricle",
+                    "heart.left_atrium",
+                    "heart.left_ventricle",
+                    "heart.tricuspid_valve",
+                    "heart.pulmonary_valve",
+                    "heart.mitral_valve",
+                    "heart.aortic_valve",
+                    "heart.vena_cavae",
+                    "heart.pulmonary_artery",
+                    "heart.pulmonary_veins",
+                    "heart.aorta",
+                    "circulation.pulmonary",
+                    "circulation.systemic"
+                  ]
+                },
+                "action": { "enum": ["highlight", "set_material_state"] },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "state": {
+                  "enum": [
+                    "default_tissue",
+                    "selected_structure",
+                    "oxygen_poor_blood",
+                    "oxygen_rich_blood"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "opacity"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "heart",
+                    "heart.right_atrium",
+                    "heart.right_ventricle",
+                    "heart.left_atrium",
+                    "heart.left_ventricle",
+                    "heart.tricuspid_valve",
+                    "heart.pulmonary_valve",
+                    "heart.mitral_valve",
+                    "heart.aortic_valve",
+                    "heart.vena_cavae",
+                    "heart.pulmonary_artery",
+                    "heart.pulmonary_veins",
+                    "heart.aorta",
+                    "circulation.pulmonary",
+                    "circulation.systemic"
+                  ]
+                },
+                "action": { "const": "fade" },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms",
+                "text_key"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "heart.right_atrium",
+                    "heart.right_ventricle",
+                    "heart.left_atrium",
+                    "heart.left_ventricle",
+                    "heart.tricuspid_valve",
+                    "heart.pulmonary_valve",
+                    "heart.mitral_valve",
+                    "heart.aortic_valve"
+                  ]
+                },
+                "action": { "const": "show_label" },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 },
+                "text_key": {
+                  "enum": [
+                    "heart.right_atrium",
+                    "heart.right_ventricle",
+                    "heart.left_atrium",
+                    "heart.left_ventricle",
+                    "heart.tricuspid_valve",
+                    "heart.pulmonary_valve",
+                    "heart.mitral_valve",
+                    "heart.aortic_valve"
+                  ]
+                }
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "target": { "const": "heart.right_atrium" },
+                    "text_key": { "const": "heart.right_atrium" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.right_ventricle" },
+                    "text_key": { "const": "heart.right_ventricle" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.left_atrium" },
+                    "text_key": { "const": "heart.left_atrium" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.left_ventricle" },
+                    "text_key": { "const": "heart.left_ventricle" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.tricuspid_valve" },
+                    "text_key": { "const": "heart.tricuspid_valve" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.pulmonary_valve" },
+                    "text_key": { "const": "heart.pulmonary_valve" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.mitral_valve" },
+                    "text_key": { "const": "heart.mitral_valve" }
+                  }
+                },
+                {
+                  "properties": {
+                    "target": { "const": "heart.aortic_valve" },
+                    "text_key": { "const": "heart.aortic_valve" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": {
+                  "enum": [
+                    "camera.heart_overview",
+                    "camera.right_heart",
+                    "camera.left_heart"
+                  ]
+                },
+                "action": { "enum": ["camera_focus", "camera_orbit"] },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/trackBase"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "target",
+                "action",
+                "start_ms",
+                "duration_ms"
+              ],
+              "properties": {
+                "id": { "$ref": "#/$defs/identifier" },
+                "target": { "$ref": "#/$defs/target" },
+                "action": { "const": "wait" },
+                "start_ms": { "type": "integer", "minimum": 0 },
+                "duration_ms": { "type": "integer", "minimum": 1 }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "start_ms",
+        "end_ms",
+        "caption"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "caption": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "view_mode",
+        "message"
+      ],
+      "properties": {
+        "view_mode": {
+          "enum": [
+            "full_body",
+            "skeleton",
+            "muscular",
+            "nervous_system",
+            "circulatory",
+            "respiratory",
+            "digestive",
+            "brain",
+            "heart",
+            "spine"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}

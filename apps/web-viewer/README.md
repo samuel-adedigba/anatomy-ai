@@ -96,6 +96,17 @@ window.executeCommand({
 
 `reset` · `zoom_in` · `zoom_out` · `rotate_left` · `rotate_right` · `front` · `back` · `top`
 
+## ScenePlan v1 contract preview
+
+The standalone viewer loads
+`configs/visual-scene/fixtures/cardiovascular.normal-circulation.v1.json`, validates every
+action and semantic identifier, and displays the ordered learning steps. A host may send the
+same ScenePlan through `postMessage`, or developers may call `window.loadScenePlan(plan)`.
+
+This milestone intentionally displays the synchronized contract without executing animation
+tracks. Runtime playback begins only after the reviewed heart asset exposes chamber targets,
+heartbeat motion, and flow paths.
+
 ---
 
 ## Viewer → Mobile message protocol
@@ -160,8 +171,12 @@ pnpm tsc --noEmit
 
 ## Known limitations
 
-- `skeleton.glb` and `spine.glb` are missing from the current asset set. The viewer falls back to a placeholder.
 - `full_body.glb` (141 MB) and `muscular.glb` (56 MB) exceed the 20 MB mobile guidance. Optimise before production.
+- `circulatory.glb` (34 MB) also exceeds the 20 MB mobile guidance.
+- Current single-mesh heart and circulatory assets do not expose the semantic targets or
+  animation capabilities required by ScenePlan v1.
 - `engines/anatomy-assets/models/isa_element_parts.txt` and `isa_parts_list_e.txt` are stray BodyParts3D metadata files that should be removed from the served directory.
-- The viewer does not perform `event.origin` validation on incoming `postMessage` events. This is acceptable for a local WebView bridge but should be reviewed before any web-hosted deployment.
-- License compatibility of bundled GLB assets must be verified before distributing a production app. See `engines/anatomy-assets/manifests/asset-registry.md` TODO note.
+- The browser bridge accepts commands only from its direct parent frame. A hosted deployment
+  should also configure an explicit allowed parent origin.
+- Licence compatibility of bundled GLB assets must be approved before distribution. See
+  `engines/anatomy-assets/manifests/asset-licence-ledger.md`.

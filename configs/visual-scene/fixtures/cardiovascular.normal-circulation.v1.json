@@ -1,0 +1,185 @@
+{
+  "schema_version": "1.0",
+  "capability_registry_version": "1.0.0",
+  "plan_id": "cardiovascular.normal-circulation.v1",
+  "topic": "cardiovascular_system",
+  "learning_objective": "Explain how the heart moves blood through pulmonary and systemic circulation.",
+  "duration_ms": 18000,
+  "loop": false,
+  "required_assets": [
+    "heart.educational.v1",
+    "circulation.major-vessels.v1"
+  ],
+  "tracks": [
+    {
+      "id": "heartbeat",
+      "target": "heart",
+      "action": "play_clip",
+      "clip": "normal_cardiac_cycle",
+      "start_ms": 0,
+      "duration_ms": 18000,
+      "loop": true
+    },
+    {
+      "id": "opening-camera",
+      "target": "camera.heart_overview",
+      "action": "camera_focus",
+      "start_ms": 0,
+      "duration_ms": 1800
+    },
+    {
+      "id": "right-heart-camera",
+      "target": "camera.right_heart",
+      "action": "camera_focus",
+      "start_ms": 3000,
+      "duration_ms": 1200
+    },
+    {
+      "id": "left-heart-camera",
+      "target": "camera.left_heart",
+      "action": "camera_focus",
+      "start_ms": 10000,
+      "duration_ms": 1200
+    },
+    {
+      "id": "right-atrium-label",
+      "target": "heart.right_atrium",
+      "action": "show_label",
+      "text_key": "heart.right_atrium",
+      "start_ms": 1800,
+      "duration_ms": 3000
+    },
+    {
+      "id": "right-ventricle-label",
+      "target": "heart.right_ventricle",
+      "action": "show_label",
+      "text_key": "heart.right_ventricle",
+      "start_ms": 2500,
+      "duration_ms": 4500
+    },
+    {
+      "id": "left-atrium-label",
+      "target": "heart.left_atrium",
+      "action": "show_label",
+      "text_key": "heart.left_atrium",
+      "start_ms": 9500,
+      "duration_ms": 3500
+    },
+    {
+      "id": "left-ventricle-label",
+      "target": "heart.left_ventricle",
+      "action": "show_label",
+      "text_key": "heart.left_ventricle",
+      "start_ms": 11000,
+      "duration_ms": 5000
+    },
+    {
+      "id": "tricuspid-label",
+      "target": "heart.tricuspid_valve",
+      "action": "show_label",
+      "text_key": "heart.tricuspid_valve",
+      "start_ms": 3600,
+      "duration_ms": 2200
+    },
+    {
+      "id": "pulmonary-valve-label",
+      "target": "heart.pulmonary_valve",
+      "action": "show_label",
+      "text_key": "heart.pulmonary_valve",
+      "start_ms": 6000,
+      "duration_ms": 2200
+    },
+    {
+      "id": "mitral-label",
+      "target": "heart.mitral_valve",
+      "action": "show_label",
+      "text_key": "heart.mitral_valve",
+      "start_ms": 10500,
+      "duration_ms": 2200
+    },
+    {
+      "id": "aortic-valve-label",
+      "target": "heart.aortic_valve",
+      "action": "show_label",
+      "text_key": "heart.aortic_valve",
+      "start_ms": 13500,
+      "duration_ms": 2200
+    },
+    {
+      "id": "body-to-right-heart",
+      "target": "circulation.systemic",
+      "action": "particle_flow",
+      "path": "body_to_right_atrium",
+      "state": "oxygen_poor_blood",
+      "start_ms": 3000,
+      "duration_ms": 3000
+    },
+    {
+      "id": "right-heart-to-lungs",
+      "target": "circulation.pulmonary",
+      "action": "particle_flow",
+      "path": "right_ventricle_to_lungs",
+      "state": "oxygen_poor_blood",
+      "start_ms": 6000,
+      "duration_ms": 3500
+    },
+    {
+      "id": "lungs-to-left-heart",
+      "target": "circulation.pulmonary",
+      "action": "particle_flow",
+      "path": "lungs_to_left_atrium",
+      "state": "oxygen_rich_blood",
+      "start_ms": 9500,
+      "duration_ms": 3500
+    },
+    {
+      "id": "left-heart-to-body",
+      "target": "circulation.systemic",
+      "action": "particle_flow",
+      "path": "left_ventricle_to_body",
+      "state": "oxygen_rich_blood",
+      "start_ms": 13000,
+      "duration_ms": 4000
+    }
+  ],
+  "steps": [
+    {
+      "id": "heart-overview",
+      "start_ms": 0,
+      "end_ms": 3000,
+      "caption": "The heart has four chambers that fill and contract in a repeating cardiac cycle."
+    },
+    {
+      "id": "body-to-right-heart",
+      "start_ms": 3000,
+      "end_ms": 6000,
+      "caption": "Oxygen-poor blood returns from the body through the venae cavae and enters the right side of the heart."
+    },
+    {
+      "id": "right-heart-to-lungs",
+      "start_ms": 6000,
+      "end_ms": 9500,
+      "caption": "The right ventricle sends this blood through the pulmonary valve and pulmonary arteries toward the lungs."
+    },
+    {
+      "id": "lungs-to-left-heart",
+      "start_ms": 9500,
+      "end_ms": 13000,
+      "caption": "Oxygen-rich blood returns from the lungs through the pulmonary veins and enters the left side of the heart."
+    },
+    {
+      "id": "left-heart-to-body",
+      "start_ms": 13000,
+      "end_ms": 18000,
+      "caption": "The left ventricle sends this blood through the aortic valve and aorta toward the body."
+    }
+  ],
+  "evidence_refs": [
+    "medlineplus.heartbeat.000067",
+    "anatomy-ai.cardiovascular.seed.v1"
+  ],
+  "fallback": {
+    "view_mode": "heart",
+    "message": "The reviewed motion assets are unavailable. Showing a static heart view with the complete text sequence instead."
+  }
+}

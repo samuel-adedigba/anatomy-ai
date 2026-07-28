@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "test": "vite build --ssr tests/scenePlanValidator.test.ts --outDir .test-dist --emptyOutDir && node .test-dist/scenePlanValidator.test.js"
   },
   "dependencies": {
     "three": "^0.165.0"

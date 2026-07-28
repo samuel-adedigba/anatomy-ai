@@ -9,6 +9,7 @@ venv/
 # ─── Build output ───────────────────────────────────────────────
 dist/
 build/
+.test-dist/
 *.egg-info/
 
 # ─── Environment ────────────────────────────────────────────────
@@ -21,6 +22,8 @@ data/vector-db/
 # ─── Raw 3D OBJ downloads (large, source data) ──────────────────
 engines/anatomy-assets/models/isa_BP3D_4.0_obj_99/
 engines/anatomy-assets/models/partof_BP3D_4.0_obj_99/
+engines/anatomy-assets/source/
+engines/anatomy-assets/work/
 
 # ─── OS ─────────────────────────────────────────────────────────
 .DS_Store

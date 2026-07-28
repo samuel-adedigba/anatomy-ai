@@ -8,6 +8,19 @@ The source of truth for the intended interactive, video-like 3D anatomy experien
 cardiovascular first proof, milestone gates, testing requirements, and external asset setup is
 [Anatomy AI Product Goals and Development Plan](docs/PRODUCT_GOALS_AND_DEVELOPMENT_PLAN.md).
 
+The first visual-contract milestone is available without AI:
+
+```bash
+node scripts/anatomy/inspect-assets.mjs --markdown --check-ledger
+node scripts/visual-scene/generate-contract-types.mjs --check
+cd services/instruction-engine && pnpm test
+cd ../../apps/web-viewer && pnpm test && pnpm dev
+```
+
+The standalone viewer validates and lists the deterministic cardiovascular steps. It does not
+play realistic heartbeat or flow motion yet because the current GLBs have no semantic chamber
+nodes, reviewed animation clip, morph targets, or flow paths.
+
 ---
 
 ## Architecture
@@ -234,6 +247,9 @@ curl -X POST http://localhost:3001/ask \
 | `/health` | GET | Returns `{ status: true, service }` |
 | `/parse` | POST | AI answer → deterministic VisualCommand |
 | `/direct` | POST | Region/mode → deterministic VisualCommand |
+| `/scene-plan/validate` | POST | Validate ScenePlan v1 against registered capabilities |
+| `/scene-plan/from-legacy` | POST | Compile a legacy direct request to a safe static ScenePlan |
+| `/asset-manifest/validate` | POST | Validate AssetManifest v1 and reviewer requirements |
 
 ### Web Viewer — port 5173
 

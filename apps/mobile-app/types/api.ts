@@ -1,4 +1,5 @@
 import { VisualCommand } from "./viewer";
+import type { ScenePlan } from "./scenePlan.generated";
 
 // ─── Source reference returned by the AI service ────────────────────────────
 export type SourceRef = {
@@ -30,6 +31,7 @@ export type AskResponseData = {
   answer: string;
   sources: SourceRef[];
   visualCommand: VisualCommand;
+  scenePlan?: ScenePlan;
 };
 
 export type AskResponse = GatewaySuccess<AskResponseData>;

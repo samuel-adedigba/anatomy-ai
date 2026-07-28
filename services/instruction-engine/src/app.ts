@@ -3,6 +3,9 @@ import express, { Request, Response } from "express";
 import { parseAnswerToCommand } from "./parsers/answerParser";
 import { buildDirectCommand } from "./parsers/directCommandBuilder";
 import { ParseRequestSchema, DirectCommandSchema } from "./validators/schemas";
+import { compileLegacyCommandToScenePlan } from "./visual-scene/legacyAdapter";
+import { validateAssetManifest } from "./visual-scene/assetManifestSchema";
+import { validateScenePlan } from "./visual-scene/scenePlanSchema";
 
 const app = express();
 app.use(express.json({ limit: "512kb" }));
@@ -38,6 +41,51 @@ app.post("/direct", (req: Request, res: Response) => {
   const command = buildDirectCommand(region, mode);
 
   res.json({ status: true, command });
+});
+
+// ─── Scene plan validation ─────────────────────────────────────
+app.post("/scene-plan/validate", (req: Request, res: Response) => {
+  const result = validateScenePlan(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      status: false,
+      message: "Scene plan validation failed.",
+      errors: result.issues,
+    });
+    return;
+  }
+
+  res.json({ status: true, plan: result.plan });
+});
+
+app.post("/asset-manifest/validate", (req: Request, res: Response) => {
+  const result = validateAssetManifest(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      status: false,
+      message: "Asset manifest validation failed.",
+      errors: result.issues,
+    });
+    return;
+  }
+
+  res.json({ status: true, manifest: result.manifest });
+});
+
+// ─── Legacy command migration adapter ──────────────────────────
+app.post("/scene-plan/from-legacy", (req: Request, res: Response) => {
+  const parsed = DirectCommandSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ status: false, errors: parsed.error.flatten() });
+    return;
+  }
+
+  const command = buildDirectCommand(parsed.data.region, parsed.data.mode);
+  res.json({
+    status: true,
+    command,
+    plan: compileLegacyCommandToScenePlan(command),
+  });
 });
 
 export default app;

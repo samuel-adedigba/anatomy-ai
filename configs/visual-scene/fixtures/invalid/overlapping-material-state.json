@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "capability_registry_version": "1.0.0",
+  "plan_id": "invalid.overlapping-material-state.v1",
+  "topic": "cardiovascular_system",
+  "learning_objective": "Contract rejection fixture.",
+  "duration_ms": 2000,
+  "loop": false,
+  "required_assets": [
+    "heart.educational.v1"
+  ],
+  "tracks": [
+    {
+      "id": "highlight-heart",
+      "target": "heart",
+      "action": "highlight",
+      "state": "selected_structure",
+      "start_ms": 0,
+      "duration_ms": 1500
+    },
+    {
+      "id": "fade-heart",
+      "target": "heart",
+      "action": "fade",
+      "opacity": 0.5,
+      "start_ms": 1000,
+      "duration_ms": 1000
+    }
+  ],
+  "steps": [
+    {
+      "id": "invalid-step",
+      "start_ms": 0,
+      "end_ms": 2000,
+      "caption": "This fixture must be rejected."
+    }
+  ],
+  "evidence_refs": [
+    "contract-test"
+  ],
+  "fallback": {
+    "view_mode": "heart",
+    "message": "Show the static heart."
+  }
+}

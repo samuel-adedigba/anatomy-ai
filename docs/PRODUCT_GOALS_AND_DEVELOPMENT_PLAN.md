@@ -31,8 +31,8 @@ A phase becomes `complete` only when all of its exit criteria pass.
 | Phase | Milestone | Status |
 | --- | --- | --- |
 | UX foundation | Responsive visual-first learning workspace | Complete |
-| 0 | Baseline, governance, and licence gate | Not started |
-| 1 | Versioned visual contracts and capability registry | Not started |
+| 0 | Baseline, governance, and licence gate | In progress |
+| 1 | Versioned visual contracts and capability registry | In progress |
 | 2 | Heart asset production pipeline | Not started |
 | 3 | Timeline, multi-layer scene, and animation runtime | Not started |
 | 4 | Reviewed cardiovascular vertical slice | Not started |
@@ -40,6 +40,16 @@ A phase becomes `complete` only when all of its exit criteria pass.
 | 6 | Mobile learning experience and optional narration | Not started |
 | 7 | Release hardening | Not started |
 | 8 | Add new processes one at a time | Not started |
+
+Phase 0 now has a reproducible GLB inspection command, recorded baseline report, and licence
+ledger. Its exit remains blocked on provenance/licence approval and selection of reference
+desktop and Android environments.
+
+Phase 1 now has authoritative JSON schemas, a capability registry, generated TypeScript
+contracts for all four consumers, instruction-engine and viewer validation, a legacy adapter,
+invalid fixtures, and a deterministic cardiovascular fixture displayed as ordered viewer
+steps. It remains `in progress` until the Phase 0 gate is cleared and the contract is accepted
+for downstream runtime integration.
 
 ## 2. Product vision
 

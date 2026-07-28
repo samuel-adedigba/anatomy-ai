@@ -2,8 +2,10 @@
 
 ## Model Registry
 All `.glb` / `.gltf` files belong in `engines/anatomy-assets/models/`.
-The names here MUST match entries in `apps/web-viewer/src/ModelLoader.ts` → `ASSET_MAP`
-and `services/instruction-engine/src/types/regionMap.ts` → `REGION_TO_MESHES`.
+Current filenames must match `apps/web-viewer/src/ModelLoader.ts` → `ASSET_MAP`.
+Production scene plans use semantic targets from
+`configs/visual-scene/capability-registry.json`; an approved versioned asset manifest resolves
+those targets to real GLB nodes.
 
 | File | View Mode Key | Source |
 |------|--------------|--------|
@@ -26,6 +28,8 @@ and `services/instruction-engine/src/types/regionMap.ts` → `REGION_TO_MESHES`.
 
 ## Notes
 - Models are canonical adult anatomy — do not imply patient-specific accuracy
-- All meshes must have named nodes matching REGION_TO_MESHES keys
+- Do not add new production logic that depends on provider names such as `FJ2439`
 - Keep each `.glb` under 20MB for acceptable WebView load time on mobile
-- TODO: verify — confirm license compatibility before distributing bundled app
+- Run `node scripts/anatomy/inspect-assets.mjs --markdown --check-ledger` after every asset
+  change
+- Distribution is blocked until `asset-licence-ledger.md` records an approval

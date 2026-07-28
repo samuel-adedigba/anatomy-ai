@@ -1,0 +1,26 @@
+{
+  "schema_version": "2.0",
+  "capability_registry_version": "1.0.0",
+  "plan_id": "invalid.version-mismatch.v1",
+  "topic": "general_anatomy",
+  "learning_objective": "Contract rejection fixture.",
+  "duration_ms": 1,
+  "loop": false,
+  "required_assets": [],
+  "tracks": [],
+  "steps": [
+    {
+      "id": "invalid-step",
+      "start_ms": 0,
+      "end_ms": 1,
+      "caption": "This fixture must be rejected."
+    }
+  ],
+  "evidence_refs": [
+    "contract-test"
+  ],
+  "fallback": {
+    "view_mode": "full_body",
+    "message": "Show the static anatomy model."
+  }
+}

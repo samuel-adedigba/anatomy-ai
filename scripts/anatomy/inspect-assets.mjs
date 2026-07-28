@@ -1,0 +1,262 @@
+#!/usr/bin/env node
+
+import { createHash } from "node:crypto";
+import { readFile, readdir } from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+
+const REPOSITORY_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
+const DEFAULT_MODELS_DIRECTORY = path.join(
+  REPOSITORY_ROOT,
+  "engines/anatomy-assets/models"
+);
+const GLB_MAGIC = 0x46546c67;
+const JSON_CHUNK_TYPE = 0x4e4f534a;
+const MOBILE_BUDGET_BYTES = 20 * 1024 * 1024;
+const LEDGER_PATH = path.join(
+  REPOSITORY_ROOT,
+  "engines/anatomy-assets/manifests/asset-licence-ledger.md"
+);
+const REQUIRED_SEMANTIC_NODES = {
+  "heart.glb": [
+    "HeartRoot",
+    "RightAtrium",
+    "RightVentricle",
+    "LeftAtrium",
+    "LeftVentricle",
+    "TricuspidValve",
+    "PulmonaryValve",
+    "MitralValve",
+    "AorticValve",
+    "VenaCavae",
+    "PulmonaryArtery",
+    "PulmonaryVeins",
+    "Aorta",
+  ],
+  "circulatory.glb": [
+    "PulmonaryCirculation",
+    "SystemicCirculation",
+  ],
+};
+const args = new Set(process.argv.slice(2));
+
+function readGlbJson(buffer, fileName) {
+  if (buffer.length < 20 || buffer.readUInt32LE(0) !== GLB_MAGIC) {
+    throw new Error(`${fileName} is not a valid binary glTF file`);
+  }
+
+  const version = buffer.readUInt32LE(4);
+  const declaredLength = buffer.readUInt32LE(8);
+  if (version !== 2) {
+    throw new Error(`${fileName} uses unsupported glTF version ${version}`);
+  }
+  if (declaredLength !== buffer.length) {
+    throw new Error(
+      `${fileName} declares ${declaredLength} bytes but contains ${buffer.length}`
+    );
+  }
+
+  let offset = 12;
+  while (offset + 8 <= buffer.length) {
+    const chunkLength = buffer.readUInt32LE(offset);
+    const chunkType = buffer.readUInt32LE(offset + 4);
+    const chunkStart = offset + 8;
+    const chunkEnd = chunkStart + chunkLength;
+    if (chunkEnd > buffer.length) {
+      throw new Error(`${fileName} contains a truncated GLB chunk`);
+    }
+    if (chunkType === JSON_CHUNK_TYPE) {
+      return JSON.parse(
+        buffer
+          .subarray(chunkStart, chunkEnd)
+          .toString("utf8")
+          .replace(/\u0000+$/u, "")
+      );
+    }
+    offset = chunkEnd;
+  }
+
+  throw new Error(`${fileName} does not contain a JSON chunk`);
+}
+
+function uniqueNames(items = []) {
+  return [...new Set(items.map((item) => item?.name).filter(Boolean))].sort();
+}
+
+function inspectDocument(fileName, buffer, document) {
+  const meshes = document.meshes ?? [];
+  const nodes = document.nodes ?? [];
+  const morphTargetCount = meshes.reduce(
+    (total, mesh) =>
+      total +
+      (mesh.primitives ?? []).reduce(
+        (primitiveTotal, primitive) =>
+          primitiveTotal + (primitive.targets?.length ?? 0),
+        0
+      ),
+    0
+  );
+  const availableNames = new Set([
+    ...uniqueNames(nodes),
+    ...uniqueNames(meshes),
+  ]);
+  const requiredSemanticNodes = REQUIRED_SEMANTIC_NODES[fileName] ?? [];
+  const missingSemanticNodes = requiredSemanticNodes.filter(
+    (name) => !availableNames.has(name)
+  );
+
+  return {
+    file: fileName,
+    bytes: buffer.length,
+    sha256: createHash("sha256").update(buffer).digest("hex"),
+    node_count: nodes.length,
+    node_names: uniqueNames(nodes),
+    mesh_count: meshes.length,
+    mesh_names: uniqueNames(meshes),
+    primitive_count: meshes.reduce(
+      (total, mesh) => total + (mesh.primitives?.length ?? 0),
+      0
+    ),
+    material_count: document.materials?.length ?? 0,
+    material_names: uniqueNames(document.materials),
+    animation_count: document.animations?.length ?? 0,
+    animation_names: uniqueNames(document.animations),
+    morph_target_count: morphTargetCount,
+    skin_count: document.skins?.length ?? 0,
+    required_semantic_nodes: requiredSemanticNodes,
+    missing_semantic_nodes: missingSemanticNodes,
+    warnings: [
+      ...(buffer.length > MOBILE_BUDGET_BYTES
+        ? [`exceeds the ${MOBILE_BUDGET_BYTES / 1024 / 1024} MB mobile budget`]
+        : []),
+      ...((document.animations?.length ?? 0) === 0
+        ? ["has no authored animation clips"]
+        : []),
+      ...(morphTargetCount === 0 ? ["has no morph targets"] : []),
+      ...((document.skins?.length ?? 0) === 0 ? ["has no skins"] : []),
+      ...(missingSemanticNodes.length > 0
+        ? [
+            `cannot resolve ${missingSemanticNodes.length} required semantic nodes (${missingSemanticNodes.join(
+              ", "
+            )})`,
+          ]
+        : []),
+    ],
+  };
+}
+
+function formatBytes(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function renderMarkdown(report) {
+  const rows = report.assets.map((asset) => {
+    const nodePreview =
+      asset.node_names.length === 0
+        ? "none"
+        : asset.node_names.slice(0, 4).join(", ") +
+          (asset.node_names.length > 4 ? ` (+${asset.node_names.length - 4})` : "");
+    return `| \`${asset.file}\` | ${formatBytes(asset.bytes)} | ${
+      asset.node_count
+    } / ${asset.mesh_count} | ${asset.primitive_count} | ${
+      asset.animation_count
+    } | ${asset.morph_target_count} | ${asset.skin_count} | ${
+      asset.required_semantic_nodes.length === 0
+        ? "n/a"
+        : `${asset.required_semantic_nodes.length - asset.missing_semantic_nodes.length}/${asset.required_semantic_nodes.length}`
+    } | ${nodePreview} |`;
+  });
+
+  const warnings = [
+    ...report.assets.flatMap((asset) =>
+      asset.warnings.map((warning) => `- \`${asset.file}\`: ${warning}.`)
+    ),
+    ...report.missing_licence_records.map(
+      (fileName) => `- \`${fileName}\`: has no licence ledger record.`
+    ),
+  ];
+
+  return [
+    "# Anatomy asset inventory",
+    "",
+    `Generated by \`node scripts/anatomy/inspect-assets.mjs --markdown\`.`,
+    "",
+    "| Asset | Size | Nodes / meshes | Primitives | Clips | Morph targets | Skins | Semantic nodes | Node names |",
+    "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ...rows,
+    "",
+    "## Automated findings",
+    "",
+    ...(warnings.length > 0 ? warnings : ["- No automated warnings."]),
+    "",
+    "Checksums and complete node, mesh, material, and animation name lists are available from",
+    "`node scripts/anatomy/inspect-assets.mjs --json`.",
+    "",
+  ].join("\n");
+}
+
+async function main() {
+  const modelsDirectory = process.env.ANATOMY_MODELS_DIR
+    ? path.resolve(process.env.ANATOMY_MODELS_DIR)
+    : DEFAULT_MODELS_DIRECTORY;
+  const fileNames = (await readdir(modelsDirectory))
+    .filter((fileName) => fileName.toLowerCase().endsWith(".glb"))
+    .sort();
+
+  const assets = [];
+  for (const fileName of fileNames) {
+    const buffer = await readFile(path.join(modelsDirectory, fileName));
+    assets.push(inspectDocument(fileName, buffer, readGlbJson(buffer, fileName)));
+  }
+  const ledger = await readFile(LEDGER_PATH, "utf8");
+  const missingLedgerRecords = fileNames.filter(
+    (fileName) => !ledger.includes(`\`${fileName}\``)
+  );
+
+  const report = {
+    schema_version: "1.0",
+    generated_at: new Date().toISOString(),
+    models_directory: path.relative(REPOSITORY_ROOT, modelsDirectory),
+    licence_ledger: path.relative(REPOSITORY_ROOT, LEDGER_PATH),
+    missing_licence_records: missingLedgerRecords,
+    assets,
+  };
+
+  if (args.has("--json")) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  } else {
+    process.stdout.write(renderMarkdown(report));
+  }
+
+  if (args.has("--check-ledger") && missingLedgerRecords.length > 0) {
+    process.stderr.write(
+      `Missing licence ledger records: ${missingLedgerRecords.join(", ")}\n`
+    );
+    process.exitCode = 1;
+  }
+  if (
+    args.has("--strict") &&
+    assets.some(
+      (asset) =>
+        asset.warnings.length > 0 || asset.missing_semantic_nodes.length > 0
+    )
+  ) {
+    process.stderr.write(
+      "Asset capability gate failed. Review the reported warnings.\n"
+    );
+    process.exitCode = 2;
+  }
+}
+
+main().catch((error) => {
+  process.stderr.write(
+    `Asset inspection failed: ${
+      error instanceof Error ? error.message : String(error)
+    }\n`
+  );
+  process.exitCode = 1;
+});
