@@ -36,9 +36,9 @@ A phase becomes `complete` only when all of its exit criteria pass.
 | 2 | Heart asset production pipeline | In progress |
 | 3 | Timeline, multi-layer scene, and animation runtime | In progress |
 | 4 | Reviewed cardiovascular vertical slice | In progress |
-| 5 | AI scene planner integration | In progress |
-| 6 | Mobile learning experience and optional narration | Not started |
-| 7 | Release hardening | Not started |
+| 5 | AI scene planner integration | Complete |
+| 6 | Mobile learning experience and optional narration | In progress |
+| 7 | Release hardening | In progress |
 | 8 | Add new processes one at a time | Not started |
 
 As of 3 August 2026, Phase 0 has a reproducible GLB inspection command, an updated baseline
@@ -49,7 +49,7 @@ licence/distribution route, and remaining non-heart asset decisions are not reco
 Phase 1 now has authoritative JSON schemas, a capability registry, generated TypeScript
 contracts for all four consumers, instruction-engine and viewer validation, a legacy adapter,
 invalid fixtures, and a deterministic cardiovascular fixture displayed as ordered viewer
-steps. The current local evidence includes 11 instruction-engine tests and 12 viewer tests,
+steps. The current local evidence includes 11 instruction-engine tests and 13 viewer tests,
 including explicit scene-plan validation, supersession cancellation, morph restoration, and
 progress throttling. It remains `in progress` until the Phase 0 gate is cleared and the
 contract is accepted for downstream runtime integration.
@@ -76,14 +76,28 @@ fixture covering all four chambers, four valves, six directional flow paths, cap
 the static fallback contract. Medical review, accessibility review, user comprehension
 testing, and reference-device performance evidence remain open, so the phase is not complete.
 
-Phase 5 has started with a deterministic scene planner integrated into the instruction engine.
-The gateway now passes the original question, evidence references, and capability-registry
-version. Supported cardiovascular process questions select the reviewed recipe, static heart
-questions use a static view, and unsupported visual requests return an explicit fallback
-message. The planner ignores retrieved text for intent and renderer selection, validates the
-reviewed recipe before returning it, and returns safe output when either dependency is
-unavailable. Golden-question, repeatability, and prompt-injection regression tests are in
-place; live RAG evaluation and the 90% reviewed-intent target remain open.
+Phase 5 is complete. The deterministic scene planner is integrated into the instruction
+engine, and the gateway passes the original question, evidence references, and
+capability-registry version. The live evaluation in
+`docs/evaluations/phase5-latest.json` ran the six-question golden set through the local RAG,
+gateway, and instruction-engine services with two production repetitions for each supported
+question. It recorded 100% reviewed-recipe selection, 100% repeated-plan equivalence, 100%
+schema-valid plans, and a passing unsupported-liver fallback. The 100% selection result
+exceeds the 90% target. Prompt-injection, dependency-failure, static-heart, and deterministic
+planner regressions are also covered by the instruction-engine suite.
+
+Phase 6 is in progress. The Expo application sends complete scene plans to the embedded
+viewer and now consumes synchronized progress, step, completion, and fallback events. Mobile
+controls provide play, pause, replay, speed changes, step seeking, progress, and the current
+caption. The active plan is safely resent after a WebView reload. Reduced-motion and text-only
+preferences, device rotation/background verification, screen-reader verification, and
+physical-device end-to-end evidence remain open. Narration remains optional and deferred.
+
+Phase 7 is in progress. Embedded viewer navigation and browser message handling are restricted
+to the configured viewer origin, and content correction and rollback procedures are recorded
+in `docs/release/content-correction-and-rollback.md`. Visual regression baselines, continuous
+integration, repeated-query soak evidence, offline verification, and final cross-functional
+approval remain open.
 
 ## 2. Product vision
 

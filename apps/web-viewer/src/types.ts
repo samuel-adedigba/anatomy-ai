@@ -66,3 +66,8 @@ export type ViewerToMobileMessage =
     }
   | { type: "scene_complete"; plan_id: string }
   | { type: "scene_fallback"; plan_id: string; message: string };
+
+export type ScenePlaybackCommand =
+  | { type: "scene_control"; action: "play" | "pause" | "replay" }
+  | { type: "scene_control"; action: "seek"; time_ms: number }
+  | { type: "scene_control"; action: "set_speed"; speed: number };

@@ -17,9 +17,12 @@ import {
 } from "../../constants/theme";
 import { getSystemByKey } from "../../constants/anatomy";
 import { CameraAction, ViewMode } from "../../types/viewer";
+import type { ScenePlan } from "../../types/scenePlan.generated";
+import type { ScenePlaybackProgress } from "../../types/viewer";
 import { Text } from "../atoms/Text";
 import { AnatomyIcon, AppIcon } from "../atoms/AppIcon";
 import { ViewerControls } from "../molecules/ViewerControls";
+import { ScenePlaybackControls } from "../molecules/ScenePlaybackControls";
 import { AnatomyViewer, AnatomyViewerHandle } from "./AnatomyViewer";
 
 type Props = {
@@ -27,13 +30,24 @@ type Props = {
   modelLoadingMode: ViewMode | null;
   isProcessing: boolean;
   viewerReady: boolean;
+  scenePlan: ScenePlan | null;
+  sceneProgress: ScenePlaybackProgress | null;
+  sceneSpeed: number;
   onReady: () => void;
+  onReset: () => void;
   onModelLoading: (mode: ViewMode) => void;
   onModelLoaded: (mode: ViewMode) => void;
   onSceneLoading: () => void;
   onSceneLoaded: () => void;
+  onSceneProgress: (progress: ScenePlaybackProgress) => void;
+  onSceneComplete: (planId: string) => void;
+  onSceneFallback: (message: string) => void;
   onError: (message: string, mode?: ViewMode) => void;
   onControl: (action: CameraAction) => void;
+  onTogglePlayback: () => void;
+  onReplay: () => void;
+  onStepSelect: (timeMs: number) => void;
+  onSpeedChange: (speed: number) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -44,13 +58,24 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
       modelLoadingMode,
       isProcessing,
       viewerReady,
+      scenePlan,
+      sceneProgress,
+      sceneSpeed,
       onReady,
+      onReset,
       onModelLoading,
       onModelLoaded,
       onSceneLoading,
       onSceneLoaded,
+      onSceneProgress,
+      onSceneComplete,
+      onSceneFallback,
       onError,
       onControl,
+      onTogglePlayback,
+      onReplay,
+      onStepSelect,
+      onSpeedChange,
       style,
     },
     ref
@@ -65,10 +90,14 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
           ref={ref}
           style={styles.viewer}
           onReady={onReady}
+          onReset={onReset}
           onModelLoading={onModelLoading}
           onModelLoaded={onModelLoaded}
           onSceneLoading={onSceneLoading}
           onSceneLoaded={onSceneLoaded}
+          onSceneProgress={onSceneProgress}
+          onSceneComplete={onSceneComplete}
+          onSceneFallback={onSceneFallback}
           onError={onError}
         />
 
@@ -143,9 +172,22 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
           </View>
         )}
 
-        <View style={styles.controls}>
-          <ViewerControls onControl={onControl} disabled={!viewerReady} />
-        </View>
+        {scenePlan && sceneProgress ? (
+          <ScenePlaybackControls
+            plan={scenePlan}
+            progress={sceneProgress}
+            speed={sceneSpeed}
+            disabled={!viewerReady}
+            onTogglePlay={onTogglePlayback}
+            onReplay={onReplay}
+            onStepSelect={onStepSelect}
+            onSpeedChange={onSpeedChange}
+          />
+        ) : (
+          <View style={styles.controls}>
+            <ViewerControls onControl={onControl} disabled={!viewerReady} />
+          </View>
+        )}
       </View>
     );
   }

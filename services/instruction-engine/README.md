@@ -28,6 +28,18 @@ Supported cardiovascular process questions select the reviewed
 `cardiovascular.normal-circulation.v1` recipe. Retrieved context is treated as evidence only;
 it cannot add renderer actions, asset paths, or executable code.
 
+## Phase 5 live evaluation
+
+With the local RAG, gateway, and instruction-engine services running, execute:
+
+```bash
+node scripts/evaluation/phase5-evaluate.mjs
+```
+
+The evaluator runs the golden questions through `/ask`, validates returned plans through
+`/scene-plan/validate`, repeats supported questions, measures recipe selection against the
+90% target, and writes a redacted report to `docs/evaluations/phase5-latest.json`.
+
 ## Setup
 ```bash
 cp ../../.env.example .env

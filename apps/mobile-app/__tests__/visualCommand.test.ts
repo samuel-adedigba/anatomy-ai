@@ -99,6 +99,31 @@ describe("parseViewerMessage", () => {
     expect(result?.type).toBe("viewer_error");
   });
 
+  it("parses scene playback progress", () => {
+    const result = parseViewerMessage(JSON.stringify({
+      type: "scene_progress",
+      plan_id: "cardiovascular.normal-circulation.v1",
+      time_ms: 2500,
+      duration_ms: 18000,
+      state: "playing",
+      step_id: "right-heart",
+    }));
+    expect(result?.type).toBe("scene_progress");
+    if (result?.type === "scene_progress") {
+      expect(result.time_ms).toBe(2500);
+      expect(result.step_id).toBe("right-heart");
+    }
+  });
+
+  it("parses scene fallback messages", () => {
+    const result = parseViewerMessage(JSON.stringify({
+      type: "scene_fallback",
+      plan_id: "fallback-plan",
+      message: "Showing a static heart view.",
+    }));
+    expect(result?.type).toBe("scene_fallback");
+  });
+
   it("returns null for malformed JSON", () => {
     expect(parseViewerMessage("{not json")).toBeNull();
   });

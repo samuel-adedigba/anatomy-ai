@@ -1,5 +1,5 @@
 import type { VisualEngine } from "./VisualEngine";
-import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
+import { ScenePlaybackCommand, VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
 import { ScenePlan } from "./visual-scene/scenePlan.generated";
 import {
   renderScenePlanFallback,
@@ -170,6 +170,11 @@ window.addEventListener("message", async (event: MessageEvent) => {
     const parsed: unknown =
       typeof payload === "string" ? JSON.parse(payload) : payload;
 
+    if (isScenePlaybackCommand(parsed)) {
+      handleScenePlaybackCommand(parsed);
+      return;
+    }
+
     if (isPotentialScenePlan(parsed)) {
       const result = validateScenePlan(parsed);
       if (!result.success) {
@@ -265,6 +270,42 @@ function isPotentialScenePlan(value: unknown): boolean {
     value !== null &&
     ("schema_version" in value || "tracks" in value || "steps" in value)
   );
+}
+
+function isScenePlaybackCommand(value: unknown): value is ScenePlaybackCommand {
+  if (typeof value !== "object" || value === null) return false;
+  const command = value as Record<string, unknown>;
+  if (command["type"] !== "scene_control" || typeof command["action"] !== "string") {
+    return false;
+  }
+  if (["play", "pause", "replay"].includes(command["action"])) return true;
+  if (command["action"] === "seek") {
+    return typeof command["time_ms"] === "number" && Number.isFinite(command["time_ms"]);
+  }
+  return command["action"] === "set_speed" &&
+    typeof command["speed"] === "number" && Number.isFinite(command["speed"]);
+}
+
+function handleScenePlaybackCommand(command: ScenePlaybackCommand): void {
+  afterSceneReady(() => {
+    switch (command.action) {
+      case "play":
+        engine?.playScene();
+        break;
+      case "pause":
+        engine?.pauseScene();
+        break;
+      case "replay":
+        engine?.replayScene();
+        break;
+      case "seek":
+        engine?.seekScene(Math.max(0, command.time_ms));
+        break;
+      case "set_speed":
+        engine?.setSceneSpeed(command.speed);
+        break;
+    }
+  });
 }
 
 function isTrustedHostMessage(event: MessageEvent): boolean {

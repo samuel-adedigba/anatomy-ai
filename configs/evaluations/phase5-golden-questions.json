@@ -1,0 +1,32 @@
+[
+  {
+    "id": "heart-pump",
+    "question": "How does the heart pump blood?",
+    "expected": "reviewed_recipe"
+  },
+  {
+    "id": "blood-through-heart",
+    "question": "Show me blood moving through the heart.",
+    "expected": "reviewed_recipe"
+  },
+  {
+    "id": "heart-beat",
+    "question": "What happens when the heart beats?",
+    "expected": "reviewed_recipe"
+  },
+  {
+    "id": "pulmonary-systemic",
+    "question": "Show pulmonary and systemic circulation.",
+    "expected": "reviewed_recipe"
+  },
+  {
+    "id": "right-ventricle-route",
+    "question": "Where does blood go after the right ventricle?",
+    "expected": "reviewed_recipe"
+  },
+  {
+    "id": "unsupported-liver",
+    "question": "Tell me about the liver.",
+    "expected": "unsupported_visual"
+  }
+]

@@ -17,7 +17,14 @@ import Constants from "expo-constants";
 import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/theme";
 import { Text } from "../atoms/Text";
 import { AppIcon } from "../atoms/AppIcon";
-import { VisualCommand, ViewMode, ViewerToMobileMessage, CameraAction } from "../../types/viewer";
+import {
+  CameraAction,
+  ScenePlaybackCommand,
+  ScenePlaybackProgress,
+  ViewerToMobileMessage,
+  ViewMode,
+  VisualCommand,
+} from "../../types/viewer";
 import type { ScenePlan } from "../../types/scenePlan.generated";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -27,20 +34,27 @@ const VIEWER_URL: string =
   (Constants.expoConfig?.extra?.webViewerUrl as string | undefined) ??
   "http://localhost:5173";
 
+const VIEWER_ORIGIN = getOrigin(VIEWER_URL);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ViewerCallbacks = {
   onReady?:        () => void;
+  onReset?:        () => void;
   onModelLoading?: (mode: ViewMode) => void;
   onModelLoaded?:  (mode: ViewMode) => void;
   onSceneLoading?: () => void;
   onSceneLoaded?:  () => void;
+  onSceneProgress?: (progress: ScenePlaybackProgress) => void;
+  onSceneComplete?: (planId: string) => void;
+  onSceneFallback?: (message: string) => void;
   onError?:        (msg: string, mode?: ViewMode) => void;
 };
 
 export type AnatomyViewerHandle = {
   sendCommand:  (command: VisualCommand) => void;
   sendScenePlan: (plan: ScenePlan) => void;
+  sendSceneControl: (command: ScenePlaybackCommand) => void;
   sendCamera:   (action: CameraAction, currentMode: ViewMode) => void;
   reloadViewer: () => void;
 };
@@ -52,7 +66,7 @@ type Props = ViewerCallbacks & {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
-  ({ onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError, style }, ref) => {
+  ({ onReady, onReset, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onSceneProgress, onSceneComplete, onSceneFallback, onError, style }, ref) => {
     const webViewRef    = useRef<InstanceType<typeof WebView>>(null);
     const [webViewLoading, setWebViewLoading] = useState(true);
     const [webViewError,   setWebViewError]   = useState<string | null>(null);
@@ -65,6 +79,9 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
       },
       sendScenePlan: (plan: ScenePlan) => {
         webViewRef.current?.postMessage(JSON.stringify(plan));
+      },
+      sendSceneControl: (command: ScenePlaybackCommand) => {
+        webViewRef.current?.postMessage(JSON.stringify(command));
       },
       sendCamera: (action: CameraAction, currentMode: ViewMode) => {
         const cmd: VisualCommand = {
@@ -80,6 +97,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
       reloadViewer: () => {
         setWebViewError(null);
         setViewerReady(false);
+        onReset?.();
         webViewRef.current?.reload();
       },
     }));
@@ -106,6 +124,15 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             case "scene_loaded":
               onSceneLoaded?.();
               break;
+            case "scene_progress":
+              onSceneProgress?.(msg);
+              break;
+            case "scene_complete":
+              onSceneComplete?.(msg.plan_id);
+              break;
+            case "scene_fallback":
+              onSceneFallback?.(msg.message);
+              break;
             case "viewer_error":
               onError?.(msg.message, msg.view_mode);
               break;
@@ -116,7 +143,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
           // Malformed message — safe to ignore
         }
       },
-      [onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError]
+      [onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onSceneProgress, onSceneComplete, onSceneFallback, onError]
     );
 
     if (webViewError) {
@@ -150,7 +177,11 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
           javaScriptEnabled
           domStorageEnabled={false}
           onMessage={handleMessage}
-          onLoadStart={() => setWebViewLoading(true)}
+          onLoadStart={() => {
+            setWebViewLoading(true);
+            setViewerReady(false);
+            onReset?.();
+          }}
           onLoadEnd={()  => setWebViewLoading(false)}
           onError={() => {
             setWebViewLoading(false);
@@ -160,6 +191,9 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             );
           }}
           originWhitelist={["*"]}
+          onShouldStartLoadWithRequest={(request) =>
+            request.url === "about:blank" || getOrigin(request.url) === VIEWER_ORIGIN
+          }
           applicationNameForUserAgent="AnatomyAI/1.0"
         />
 
@@ -182,6 +216,14 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
 );
 
 AnatomyViewer.displayName = "AnatomyViewer";
+
+function getOrigin(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return "";
+  }
+}
 
 const styles = StyleSheet.create({
   container: {

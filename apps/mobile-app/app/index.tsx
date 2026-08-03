@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors, Spacing } from "../constants/theme";
 import { useAnatomyStore } from "../store/useAnatomyStore";
-import { CameraAction, ViewMode } from "../types/viewer";
+import { CameraAction, ScenePlaybackProgress, ViewMode } from "../types/viewer";
 
 import { AppHeader } from "../components/molecules/AppHeader";
 import { QueryInput } from "../components/molecules/QueryInput";
@@ -71,6 +71,8 @@ export default function AnatomyWorkspace() {
 
   const [modelLoadingMode, setModelLoadingMode] = useState<ViewMode | null>(null);
   const [activePane, setActivePane] = useState<WorkspacePane>("viewer");
+  const [sceneProgress, setSceneProgress] = useState<ScenePlaybackProgress | null>(null);
+  const [sceneSpeed, setSceneSpeed] = useState(1);
 
   useEffect(() => {
     hydrate();
@@ -83,8 +85,17 @@ export default function AnatomyWorkspace() {
 
   useEffect(() => {
     if (viewerReady && viewerRef.current && currentScenePlan) {
+      setSceneProgress({
+        plan_id: currentScenePlan.plan_id,
+        time_ms: 0,
+        duration_ms: currentScenePlan.duration_ms,
+        state: "idle",
+        step_id: currentScenePlan.steps[0]?.id,
+      });
+      setSceneSpeed(1);
       viewerRef.current.sendScenePlan(currentScenePlan);
     } else if (currentCommand && viewerRef.current && viewerReady) {
+      setSceneProgress(null);
       viewerRef.current.sendCommand(currentCommand);
     }
   }, [currentCommand, currentScenePlan, viewerReady]);
@@ -113,6 +124,10 @@ export default function AnatomyWorkspace() {
 
   const handleViewerReady = useCallback(() => {
     setViewerReady(true);
+  }, [setViewerReady]);
+
+  const handleViewerReset = useCallback(() => {
+    setViewerReady(false);
   }, [setViewerReady]);
 
   const handleModelLoading = useCallback(
@@ -147,6 +162,27 @@ export default function AnatomyWorkspace() {
     setModelLoadingMode(null);
   }, [setViewerLoading]);
 
+  const handleTogglePlayback = useCallback(() => {
+    viewerRef.current?.sendSceneControl({
+      type: "scene_control",
+      action: sceneProgress?.state === "playing" ? "pause" : "play",
+    });
+  }, [sceneProgress?.state]);
+
+  const handleReplay = useCallback(() => {
+    viewerRef.current?.sendSceneControl({ type: "scene_control", action: "replay" });
+  }, []);
+
+  const handleStepSelect = useCallback((timeMs: number) => {
+    viewerRef.current?.sendSceneControl({ type: "scene_control", action: "pause" });
+    viewerRef.current?.sendSceneControl({ type: "scene_control", action: "seek", time_ms: timeMs });
+  }, []);
+
+  const handleSpeedChange = useCallback((speed: number) => {
+    setSceneSpeed(speed);
+    viewerRef.current?.sendSceneControl({ type: "scene_control", action: "set_speed", speed });
+  }, []);
+
   const viewerStage = (
     <ViewerStage
       ref={viewerRef}
@@ -154,13 +190,24 @@ export default function AnatomyWorkspace() {
       modelLoadingMode={modelLoadingMode}
       isProcessing={isLoading}
       viewerReady={viewerReady}
+      scenePlan={currentScenePlan}
+      sceneProgress={sceneProgress}
+      sceneSpeed={sceneSpeed}
       onReady={handleViewerReady}
+      onReset={handleViewerReset}
       onModelLoading={handleModelLoading}
       onModelLoaded={handleModelLoaded}
       onSceneLoading={handleSceneLoading}
       onSceneLoaded={handleSceneLoaded}
+      onSceneProgress={setSceneProgress}
+      onSceneComplete={() => setViewerLoading(false)}
+      onSceneFallback={() => setViewerLoading(false)}
       onError={handleViewerError}
       onControl={handleCameraControl}
+      onTogglePlayback={handleTogglePlayback}
+      onReplay={handleReplay}
+      onStepSelect={handleStepSelect}
+      onSpeedChange={handleSpeedChange}
       style={styles.fill}
     />
   );

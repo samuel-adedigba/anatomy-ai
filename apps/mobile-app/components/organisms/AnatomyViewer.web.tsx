@@ -18,6 +18,8 @@ import Constants from "expo-constants";
 import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/theme";
 import {
   CameraAction,
+  ScenePlaybackCommand,
+  ScenePlaybackProgress,
   ViewerToMobileMessage,
   ViewMode,
   VisualCommand,
@@ -33,16 +35,21 @@ const VIEWER_URL: string =
 
 type ViewerCallbacks = {
   onReady?: () => void;
+  onReset?: () => void;
   onModelLoading?: (mode: ViewMode) => void;
   onModelLoaded?: (mode: ViewMode) => void;
   onSceneLoading?: () => void;
   onSceneLoaded?: () => void;
+  onSceneProgress?: (progress: ScenePlaybackProgress) => void;
+  onSceneComplete?: (planId: string) => void;
+  onSceneFallback?: (message: string) => void;
   onError?: (message: string, mode?: ViewMode) => void;
 };
 
 export type AnatomyViewerHandle = {
   sendCommand: (command: VisualCommand) => void;
   sendScenePlan: (plan: ScenePlan) => void;
+  sendSceneControl: (command: ScenePlaybackCommand) => void;
   sendCamera: (action: CameraAction, currentMode: ViewMode) => void;
   reloadViewer: () => void;
 };
@@ -52,7 +59,7 @@ type Props = ViewerCallbacks & {
 };
 
 export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
-  ({ onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError, style }, ref) => {
+  ({ onReady, onReset, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onSceneProgress, onSceneComplete, onSceneFallback, onError, style }, ref) => {
     const frameRef = useRef<HTMLIFrameElement>(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [frameLoading, setFrameLoading] = useState(true);
@@ -77,6 +84,11 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
         if (!frameWindow) return;
         frameWindow.postMessage(JSON.stringify(plan), new URL(VIEWER_URL).origin);
       },
+      sendSceneControl: (command: ScenePlaybackCommand) => {
+        const frameWindow = frameRef.current?.contentWindow;
+        if (!frameWindow) return;
+        frameWindow.postMessage(JSON.stringify(command), new URL(VIEWER_URL).origin);
+      },
       sendCamera: (action: CameraAction, currentMode: ViewMode) => {
         postCommand({
           focus_region: currentMode,
@@ -91,6 +103,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
         setFrameError(null);
         setViewerReady(false);
         setFrameLoading(true);
+        onReset?.();
         setReloadKey((key) => key + 1);
       },
     }));
@@ -98,6 +111,11 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
         if (event.source !== frameRef.current?.contentWindow) return;
+        try {
+          if (event.origin !== new URL(VIEWER_URL).origin) return;
+        } catch {
+          return;
+        }
 
         try {
           const msg = (
@@ -121,6 +139,15 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             case "scene_loaded":
               onSceneLoaded?.();
               break;
+            case "scene_progress":
+              onSceneProgress?.(msg);
+              break;
+            case "scene_complete":
+              onSceneComplete?.(msg.plan_id);
+              break;
+            case "scene_fallback":
+              onSceneFallback?.(msg.message);
+              break;
             case "viewer_error":
               onError?.(msg.message, msg.view_mode);
               break;
@@ -134,7 +161,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
 
       window.addEventListener("message", handleMessage);
       return () => window.removeEventListener("message", handleMessage);
-    }, [onError, onModelLoaded, onModelLoading, onReady, onSceneLoaded, onSceneLoading]);
+    }, [onError, onModelLoaded, onModelLoading, onReady, onSceneComplete, onSceneFallback, onSceneLoaded, onSceneLoading, onSceneProgress]);
 
     if (frameError) {
       return (
@@ -149,6 +176,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
               setFrameError(null);
               setViewerReady(false);
               setFrameLoading(true);
+              onReset?.();
               setReloadKey((key) => key + 1);
             }}
             accessibilityRole="button"
