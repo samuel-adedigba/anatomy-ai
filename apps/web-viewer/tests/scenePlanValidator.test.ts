@@ -8,6 +8,75 @@ import unknownTargetFixture from "../../../configs/visual-scene/fixtures/invalid
 import versionMismatchFixture from "../../../configs/visual-scene/fixtures/invalid/version-mismatch.json";
 import { validateScenePlan } from "../src/visual-scene/scenePlanValidator";
 import { TimelinePlayer } from "../src/timeline/TimelinePlayer";
+import { ScenePlanRuntime } from "../src/runtime/ScenePlanRuntime";
+import * as THREE from "three";
+import type { ScenePlan } from "../src/visual-scene/scenePlan.generated";
+
+type RuntimeHarness = {
+  layers: {
+    load: (assetId: string) => Promise<unknown>;
+    activate: (layers: unknown[]) => void;
+    clear: () => void;
+  };
+  particles: { clear: () => void };
+  labels: { clear: () => void };
+  timeline: TimelinePlayer;
+  plan: ScenePlan | null;
+  mixers: Map<unknown, unknown>;
+  clipActions: Map<string, THREE.AnimationAction>;
+  materialSnapshots: Map<THREE.Mesh, unknown>;
+  morphSnapshots: Map<THREE.Mesh, Map<number, number>>;
+  activeCameraTrackId: string | null;
+  cameraOrbitStartPosition: THREE.Vector3 | null;
+  loadSequence: number;
+  lastProgressEmitTime: number;
+  lastProgressState: string | null;
+  restoreMaterials: () => void;
+  restoreMorphs: () => void;
+  load: (plan: ScenePlan) => Promise<boolean>;
+  stop: () => void;
+  emitProgress: (timeMs?: number, force?: boolean) => void;
+  callbacks: { onProgress?: (progress: unknown) => void };
+};
+
+function createRuntimeHarness(
+  load: (assetId: string) => Promise<unknown>,
+  callbacks: RuntimeHarness["callbacks"] = {}
+): RuntimeHarness {
+  const runtime = Object.create(ScenePlanRuntime.prototype) as RuntimeHarness;
+  runtime.layers = { load, activate: () => {}, clear: () => {} };
+  runtime.particles = { clear: () => {} };
+  runtime.labels = { clear: () => {} };
+  runtime.timeline = new TimelinePlayer();
+  runtime.plan = null;
+  runtime.mixers = new Map();
+  runtime.clipActions = new Map();
+  runtime.materialSnapshots = new Map();
+  runtime.morphSnapshots = new Map();
+  runtime.activeCameraTrackId = null;
+  runtime.cameraOrbitStartPosition = null;
+  runtime.loadSequence = 0;
+  runtime.lastProgressEmitTime = -Infinity;
+  runtime.lastProgressState = null;
+  runtime.callbacks = callbacks;
+  runtime.restoreMaterials = () => {};
+  runtime.restoreMorphs = (
+    ScenePlanRuntime.prototype as unknown as {
+      restoreMorphs: () => void;
+    }
+  ).restoreMorphs.bind(runtime);
+  return runtime;
+}
+
+function minimalScenePlan(): ScenePlan {
+  return {
+    ...structuredClone(cardiovascularFixture),
+    duration_ms: 100,
+    required_assets: ["heart.educational.v1"],
+    tracks: [],
+    steps: [{ id: "only-step", start_ms: 0, end_ms: 100, caption: "Inspect the heart." }],
+  } as ScenePlan;
+}
 
 type MutableFixture = {
   schema_version: string;
@@ -119,4 +188,54 @@ test("timeline seek clamps to the scene duration", () => {
 
   assert.equal(timeline.getTimeMs(), 500);
   assert.equal(timeline.getState(), "completed");
+});
+
+test("scene runtime ignores a superseded asset load", async () => {
+  let releaseFirstLoad = () => {};
+  const firstLoadGate = new Promise<void>((resolve) => {
+    releaseFirstLoad = resolve;
+  });
+  let loadCount = 0;
+  const runtime = createRuntimeHarness(async () => {
+    loadCount += 1;
+    if (loadCount === 1) await firstLoadGate;
+    return { assetId: "heart.educational.v1", available: true };
+  });
+  const plan = minimalScenePlan();
+
+  const first = runtime.load(plan);
+  const second = runtime.load(plan);
+  releaseFirstLoad();
+
+  assert.equal(await first, false);
+  assert.equal(await second, true);
+});
+
+test("scene runtime restores morph values when stopped", () => {
+  const runtime = createRuntimeHarness(async () => undefined);
+  const mesh = new THREE.Mesh();
+  mesh.morphTargetInfluences = [0.25];
+  runtime.morphSnapshots.set(mesh, new Map([[0, 0.25]]));
+  mesh.morphTargetInfluences[0] = 0.9;
+
+  runtime.stop();
+
+  assert.equal(mesh.morphTargetInfluences[0], 0.25);
+  assert.equal(runtime.morphSnapshots.size, 0);
+});
+
+test("scene progress callbacks are throttled while forced updates remain immediate", () => {
+  const progress: unknown[] = [];
+  const runtime = createRuntimeHarness(async () => undefined, {
+    onProgress: (value) => progress.push(value),
+  });
+  runtime.plan = minimalScenePlan();
+  runtime.timeline.load(1000, false, []);
+
+  runtime.emitProgress(0, true);
+  runtime.emitProgress(25);
+  runtime.emitProgress(50);
+  runtime.emitProgress(100);
+
+  assert.equal(progress.length, 2);
 });

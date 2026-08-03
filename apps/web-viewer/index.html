@@ -92,6 +92,26 @@
         align-items: center;
         gap: 8px;
       }
+      #play-heart-explanation {
+        min-height: 40px;
+        border: 1px solid rgba(78, 217, 198, 0.45);
+        border-radius: 10px;
+        background: var(--accent-dim);
+        color: var(--text);
+        padding: 7px 12px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 650;
+        cursor: pointer;
+      }
+      #play-heart-explanation:hover { background: rgba(78, 217, 198, 0.2); }
+      #play-heart-explanation:focus-visible,
+      .scene-plan-controls button:focus-visible,
+      .scene-plan-controls select:focus-visible,
+      .scene-plan-controls input:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
       #viewer-ui label {
         color: var(--text-muted);
         font-size: 10px;
@@ -209,6 +229,26 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
+      }
+      .scene-plan-info {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .scene-plan-info h3 {
+        color: var(--text-second);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .scene-plan-info ul {
+        display: grid;
+        gap: 4px;
+        padding-left: 18px;
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1.45;
       }
       .legend-dot {
         width: 9px;
@@ -378,6 +418,7 @@
           <option value="spine">Spine</option>
         </select>
       </div>
+      <button id="play-heart-explanation" type="button">Play heart explanation</button>
     </header>
 
     <!-- Loading indicator -->
@@ -418,6 +459,20 @@
       <div class="scene-plan-legend" aria-label="Flow legend">
         <span><i class="legend-dot oxygen-poor" aria-hidden="true"></i>Oxygen-poor blood</span>
         <span><i class="legend-dot oxygen-rich" aria-hidden="true"></i>Oxygen-rich blood</span>
+      </div>
+      <div class="scene-plan-info">
+        <section aria-labelledby="scene-plan-sources-title">
+          <h3 id="scene-plan-sources-title">Sources used</h3>
+          <ul id="scene-plan-sources"></ul>
+        </section>
+        <section aria-labelledby="scene-plan-simplifications-title">
+          <h3 id="scene-plan-simplifications-title">Educational choices</h3>
+          <ul>
+            <li>Flow markers show direction along reviewed paths; they are not a fluid simulation.</li>
+            <li>The sequence is slowed and uses fewer markers so the route is easier to follow.</li>
+            <li>Blue and red are teaching conventions for oxygen-poor and oxygen-rich blood.</li>
+          </ul>
+        </section>
       </div>
       <div id="scene-plan-labels" class="scene-plan-labels" aria-live="polite"></div>
       <ol id="scene-plan-steps"></ol>

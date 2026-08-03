@@ -46,6 +46,7 @@ function isValidCommand(obj: unknown): obj is VisualCommand {
 
 const container = document.getElementById("canvas-container") as HTMLElement;
 const viewSelect = document.getElementById("view-mode") as HTMLSelectElement | null;
+const playHeartButton = document.getElementById("play-heart-explanation") as HTMLButtonElement | null;
 const loadingEl = document.getElementById("loading-overlay") as HTMLElement | null;
 const loadingLabel = document.getElementById("loading-label") as HTMLElement | null;
 const isEmbedded =
@@ -142,6 +143,15 @@ const runCommand = (viewMode: ViewMode) => {
 if (viewSelect) {
   viewSelect.addEventListener("change", () => {
     runCommand(viewSelect.value as ViewMode);
+  });
+}
+
+if (playHeartButton) {
+  playHeartButton.addEventListener("click", () => {
+    playHeartButton.disabled = true;
+    void loadHeartExplanation().finally(() => {
+      playHeartButton.disabled = false;
+    });
   });
 }
 
@@ -278,5 +288,59 @@ function showScenePlan(plan: ScenePlan): void {
     onSeek: (timeMs) => engine?.seekScene(timeMs),
     onSpeedChange: (speed) => engine?.setSceneSpeed(speed),
   });
+  renderScenePlanSources(plan);
   void executeScenePlan(plan);
+}
+
+async function loadHeartExplanation(): Promise<void> {
+  try {
+    const response = await fetch("/visual-scene/fixtures/cardiovascular.normal-circulation.v1.json");
+    if (!response.ok) {
+      throw new Error(`The heart explanation could not be loaded (${response.status}).`);
+    }
+    const result = validateScenePlan(await response.json());
+    if (!result.success) {
+      const message = result.issues.map((issue) => `${issue.path}: ${issue.message}`).join(" ");
+      renderScenePlanError(message);
+      return;
+    }
+    showScenePlan(result.plan);
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "The heart explanation could not be loaded.";
+    renderScenePlanError(message);
+    postToHost({ type: "viewer_error", message });
+  }
+}
+
+function renderScenePlanSources(plan: ScenePlan): void {
+  const sources = document.getElementById("scene-plan-sources");
+  if (!sources) return;
+  const sourceDetails: Record<string, { label: string; href?: string }> = {
+    "medlineplus.heartbeat.000067": {
+      label: "MedlinePlus: How the heart works",
+      href: "https://medlineplus.gov/ency/anatomyvideos/000067.htm",
+    },
+    "anatomy-ai.cardiovascular.seed.v1": {
+      label: "Anatomy AI cardiovascular reference set (local)",
+    },
+  };
+  sources.replaceChildren(
+    ...plan.evidence_refs.map((reference) => {
+      const item = document.createElement("li");
+      const source = sourceDetails[reference];
+      if (!source?.href) {
+        item.textContent = source?.label ?? reference;
+        return item;
+      }
+      const link = document.createElement("a");
+      link.href = source.href;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = `${source.label} (opens in a new tab)`;
+      item.append(link);
+      return item;
+    })
+  );
 }

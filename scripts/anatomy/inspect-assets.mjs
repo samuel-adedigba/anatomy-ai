@@ -21,6 +21,21 @@ const LEDGER_PATH = path.join(
   "engines/anatomy-assets/manifests/asset-licence-ledger.md"
 );
 const REQUIRED_SEMANTIC_NODES = {
+  "heart.educational.v1.glb": [
+    "HeartRoot",
+    "RightAtrium",
+    "RightVentricle",
+    "LeftAtrium",
+    "LeftVentricle",
+    "TricuspidValve",
+    "PulmonaryValve",
+    "MitralValve",
+    "AorticValve",
+    "VenaCavae",
+    "PulmonaryArtery",
+    "PulmonaryVeins",
+    "Aorta",
+  ],
   "heart.glb": [
     "HeartRoot",
     "RightAtrium",

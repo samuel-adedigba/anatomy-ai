@@ -1,13 +1,18 @@
 # Engineering baseline
 
-**Recorded:** 25 July 2026
+**Recorded:** 3 August 2026
 
 | Application | Check | Result |
 | --- | --- | --- |
-| Instruction engine | `pnpm test` | Pass: 3 tests |
-| Web viewer | `pnpm build` | Pass; existing bundle-size warning at 604.33 kB |
+| Instruction engine | `pnpm test` | Pass: 11 tests |
+| Web viewer | `pnpm type-check` | Pass |
+| Web viewer | `pnpm test` | Pass: 12 tests, including runtime supersession, morph cleanup, and progress throttling |
+| Web viewer | `pnpm build` | Pass; lazy bootstrap, engine, and Three.js vendor chunks; no chunk warning |
 | API gateway | `pnpm build` | Pass |
-| Mobile app | `pnpm test && pnpm type-check` | Pass: 35 tests and TypeScript |
+| Mobile app | `pnpm exec jest --watchAll=false --runInBand` | Pass: 35 tests |
+| Mobile app | `pnpm type-check` | Pass |
+| Asset inventory | `node scripts/anatomy/inspect-assets.mjs --markdown --check-ledger` | Pass; legacy capability warnings recorded |
+| Heart manifest | `node scripts/anatomy/validate-asset-manifest.mjs --manifest engines/anatomy-assets/manifests/heart.educational.v1.json` | Pass |
 | Full integration | `./scripts/test-integration.sh` | Not run; requires all local services, Ollama models, and indexed knowledge |
 
 ## Reference environments
@@ -15,5 +20,10 @@
 - Desktop browser: pending engineering selection.
 - Android device: pending engineering selection.
 
-Performance budgets in Phase 3 remain provisional until both reference environments are
-recorded. This does not block contract work, but it blocks Phase 0 exit.
+## Gate status
+
+The code and local-test portions of the Phase 0–3 gates are reproducible. Phase 0 remains
+open until reference environments and distribution/licence decisions are recorded. Phase 2
+remains open until qualified medical review, Android visual verification, and final
+attribution/distribution packaging are recorded. Phase 3 performance budgets remain open
+until measured on the selected Android device and desktop browser.

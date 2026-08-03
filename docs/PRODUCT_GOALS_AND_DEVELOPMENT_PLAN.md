@@ -35,32 +35,44 @@ A phase becomes `complete` only when all of its exit criteria pass.
 | 1 | Versioned visual contracts and capability registry | In progress |
 | 2 | Heart asset production pipeline | In progress |
 | 3 | Timeline, multi-layer scene, and animation runtime | In progress |
-| 4 | Reviewed cardiovascular vertical slice | Not started |
+| 4 | Reviewed cardiovascular vertical slice | In progress |
 | 5 | AI scene planner integration | Not started |
 | 6 | Mobile learning experience and optional narration | Not started |
 | 7 | Release hardening | Not started |
 | 8 | Add new processes one at a time | Not started |
 
-Phase 0 now has a reproducible GLB inspection command, recorded baseline report, and licence
-ledger. The heart development asset approval is recorded; Phase 0 remains in progress for
-selection of reference desktop and Android environments and the remaining non-heart asset gates.
+As of 3 August 2026, Phase 0 has a reproducible GLB inspection command, an updated baseline
+report, and a licence ledger. The heart development asset approval is recorded. Phase 0
+remains in progress because the reference desktop and Android environments, final product
+licence/distribution route, and remaining non-heart asset decisions are not recorded.
 
 Phase 1 now has authoritative JSON schemas, a capability registry, generated TypeScript
 contracts for all four consumers, instruction-engine and viewer validation, a legacy adapter,
 invalid fixtures, and a deterministic cardiovascular fixture displayed as ordered viewer
-steps. It remains `in progress` until the Phase 0 gate is cleared and the contract is accepted
-for downstream runtime integration.
+steps. The current local evidence includes 11 instruction-engine tests and 12 viewer tests,
+including explicit scene-plan validation, supersession cancellation, morph restoration, and
+progress throttling. It remains `in progress` until the Phase 0 gate is cleared and the
+contract is accepted for downstream runtime integration.
 
 Phase 2 has an approved, served `heart.educational.v1` development asset with semantic targets,
 the `CardiacCycle` clip, morph targets, directional flow paths, checksum, and manifest
-validation. Android visual verification and final distribution packaging remain open.
+validation. The asset inventory now reports 13/13 required semantic targets and the manifest
+validator passes. Qualified medical reviewer sign-off, Android visual verification, and final
+attribution/distribution packaging remain open, so the phase is not complete.
 
 Phase 3 runtime work has started independently of the remaining reference-environment
 approval. The web viewer now has a deterministic timeline and playback bridge,
 manifest-based scene-layer loading, runtime capability hooks for clips, morphs, particle flow,
-labels, materials, camera actions, reduced motion, cleanup, and static fallback handling. Its
-exit remains open until approved assets are available and the required runtime, performance,
-and integration tests pass.
+labels, materials, camera actions, reduced motion, cleanup, and static fallback handling. The
+local viewer suite covers superseding-plan cancellation, morph cleanup, and throttled progress
+updates. Its exit remains open until standalone playback, reference-device performance, and
+full integration evidence are recorded, or an approved remediation plan is attached.
+
+Phase 4 has started with the deterministic cardiovascular vertical slice. The standalone
+viewer now provides a “Play heart explanation” launch action, synchronized step controls,
+flow legend, evidence references, and visible educational simplifications. Medical review,
+accessibility review, user comprehension testing, and reference-device performance evidence
+remain open, so the phase is not complete.
 
 ## 2. Product vision
 
