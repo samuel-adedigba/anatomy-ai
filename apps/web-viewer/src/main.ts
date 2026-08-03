@@ -282,6 +282,9 @@ function isScenePlaybackCommand(value: unknown): value is ScenePlaybackCommand {
   if (command["action"] === "seek") {
     return typeof command["time_ms"] === "number" && Number.isFinite(command["time_ms"]);
   }
+  if (command["action"] === "set_reduced_motion") {
+    return typeof command["enabled"] === "boolean";
+  }
   return command["action"] === "set_speed" &&
     typeof command["speed"] === "number" && Number.isFinite(command["speed"]);
 }
@@ -303,6 +306,9 @@ function handleScenePlaybackCommand(command: ScenePlaybackCommand): void {
         break;
       case "set_speed":
         engine?.setSceneSpeed(command.speed);
+        break;
+      case "set_reduced_motion":
+        engine?.setReducedMotion(command.enabled);
         break;
     }
   });

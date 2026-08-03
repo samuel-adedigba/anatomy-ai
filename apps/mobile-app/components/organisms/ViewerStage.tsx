@@ -33,6 +33,8 @@ type Props = {
   scenePlan: ScenePlan | null;
   sceneProgress: ScenePlaybackProgress | null;
   sceneSpeed: number;
+  reducedMotion: boolean;
+  textOnly: boolean;
   onReady: () => void;
   onReset: () => void;
   onModelLoading: (mode: ViewMode) => void;
@@ -48,6 +50,8 @@ type Props = {
   onReplay: () => void;
   onStepSelect: (timeMs: number) => void;
   onSpeedChange: (speed: number) => void;
+  onReducedMotionChange: (enabled: boolean) => void;
+  onTextOnlyChange: (enabled: boolean) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -61,6 +65,8 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
       scenePlan,
       sceneProgress,
       sceneSpeed,
+      reducedMotion,
+      textOnly,
       onReady,
       onReset,
       onModelLoading,
@@ -76,6 +82,8 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
       onReplay,
       onStepSelect,
       onSpeedChange,
+      onReducedMotionChange,
+      onTextOnlyChange,
       style,
     },
     ref
@@ -86,20 +94,42 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
 
     return (
       <View style={[styles.stage, style]}>
-        <AnatomyViewer
-          ref={ref}
+        <View
           style={styles.viewer}
-          onReady={onReady}
-          onReset={onReset}
-          onModelLoading={onModelLoading}
-          onModelLoaded={onModelLoaded}
-          onSceneLoading={onSceneLoading}
-          onSceneLoaded={onSceneLoaded}
-          onSceneProgress={onSceneProgress}
-          onSceneComplete={onSceneComplete}
-          onSceneFallback={onSceneFallback}
-          onError={onError}
-        />
+          pointerEvents={textOnly ? "none" : "auto"}
+          accessibilityElementsHidden={textOnly}
+          importantForAccessibility={textOnly ? "no-hide-descendants" : "auto"}
+        >
+          <AnatomyViewer
+            ref={ref}
+            style={styles.viewer}
+            onReady={onReady}
+            onReset={onReset}
+            onModelLoading={onModelLoading}
+            onModelLoaded={onModelLoaded}
+            onSceneLoading={onSceneLoading}
+            onSceneLoaded={onSceneLoaded}
+            onSceneProgress={onSceneProgress}
+            onSceneComplete={onSceneComplete}
+            onSceneFallback={onSceneFallback}
+            onError={onError}
+          />
+        </View>
+
+        {textOnly && scenePlan && (
+          <View
+            style={styles.textOnlyPanel}
+            accessible
+            accessibilityLabel="Text-only visual explanation"
+          >
+            <AppIcon name="text-box-outline" size={30} color={Colors.cyan} />
+            <Text style={styles.textOnlyTitle}>Text-only explanation</Text>
+            <Text style={styles.textOnlyObjective}>{scenePlan.learning_objective}</Text>
+            <Text style={styles.textOnlyHint}>
+              Use the numbered steps below to read each part of the explanation.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.stageHeader} pointerEvents="none">
           <View style={styles.subjectBadge}>
@@ -177,11 +207,15 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
             plan={scenePlan}
             progress={sceneProgress}
             speed={sceneSpeed}
+            reducedMotion={reducedMotion}
+            textOnly={textOnly}
             disabled={!viewerReady}
             onTogglePlay={onTogglePlayback}
             onReplay={onReplay}
             onStepSelect={onStepSelect}
             onSpeedChange={onSpeedChange}
+            onReducedMotionChange={onReducedMotionChange}
+            onTextOnlyChange={onTextOnlyChange}
           />
         ) : (
           <View style={styles.controls}>
@@ -207,6 +241,36 @@ const styles = StyleSheet.create({
     ...Shadow.card,
   },
   viewer: { flex: 1, backgroundColor: Colors.canvas },
+  textOnlyPanel: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xxl,
+    paddingBottom: 250,
+    gap: Spacing.sm,
+    backgroundColor: Colors.canvas,
+  },
+  textOnlyTitle: {
+    color: Colors.textPrimary,
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.semi,
+    textAlign: "center",
+  },
+  textOnlyObjective: {
+    maxWidth: 520,
+    color: Colors.textSecond,
+    fontSize: FontSize.base,
+    lineHeight: 24,
+    textAlign: "center",
+  },
+  textOnlyHint: {
+    maxWidth: 420,
+    color: Colors.textMuted,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    textAlign: "center",
+  },
   stageHeader: {
     position:       "absolute",
     zIndex:         10,

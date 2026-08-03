@@ -18,7 +18,7 @@ type RuntimeHarness = {
     activate: (layers: unknown[]) => void;
     clear: () => void;
   };
-  particles: { clear: () => void };
+  particles: { clear: () => void; setReducedMotion: (enabled: boolean) => void };
   labels: { clear: () => void };
   timeline: TimelinePlayer;
   plan: ScenePlan | null;
@@ -36,6 +36,7 @@ type RuntimeHarness = {
   load: (plan: ScenePlan) => Promise<boolean>;
   stop: () => void;
   emitProgress: (timeMs?: number, force?: boolean) => void;
+  setReducedMotion: (enabled: boolean) => void;
   callbacks: { onProgress?: (progress: unknown) => void };
 };
 
@@ -45,7 +46,7 @@ function createRuntimeHarness(
 ): RuntimeHarness {
   const runtime = Object.create(ScenePlanRuntime.prototype) as RuntimeHarness;
   runtime.layers = { load, activate: () => {}, clear: () => {} };
-  runtime.particles = { clear: () => {} };
+  runtime.particles = { clear: () => {}, setReducedMotion: () => {} };
   runtime.labels = { clear: () => {} };
   runtime.timeline = new TimelinePlayer();
   runtime.plan = null;
@@ -279,4 +280,16 @@ test("scene progress callbacks are throttled while forced updates remain immedia
   runtime.emitProgress(100);
 
   assert.equal(progress.length, 2);
+});
+
+test("scene runtime applies host reduced-motion preferences", () => {
+  const runtime = createRuntimeHarness(async () => undefined);
+  let particlesReduced = false;
+  runtime.particles.setReducedMotion = (enabled) => {
+    particlesReduced = enabled;
+  };
+
+  runtime.setReducedMotion(true);
+
+  assert.equal(particlesReduced, true);
 });

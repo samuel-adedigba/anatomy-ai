@@ -12,22 +12,30 @@ type Props = {
   plan: ScenePlan;
   progress: ScenePlaybackProgress;
   speed: number;
+  reducedMotion: boolean;
+  textOnly: boolean;
   disabled?: boolean;
   onTogglePlay: () => void;
   onReplay: () => void;
   onStepSelect: (timeMs: number) => void;
   onSpeedChange: (speed: number) => void;
+  onReducedMotionChange: (enabled: boolean) => void;
+  onTextOnlyChange: (enabled: boolean) => void;
 };
 
 export function ScenePlaybackControls({
   plan,
   progress,
   speed,
+  reducedMotion,
+  textOnly,
   disabled = false,
   onTogglePlay,
   onReplay,
   onStepSelect,
   onSpeedChange,
+  onReducedMotionChange,
+  onTextOnlyChange,
 }: Props) {
   const activeStep = plan.steps.find((step) => step.id === progress.step_id) ??
     plan.steps.find(
@@ -116,7 +124,48 @@ export function ScenePlaybackControls({
           );
         })}
       </ScrollView>
+
+      <View style={styles.preferenceRow} accessibilityRole="toolbar" accessibilityLabel="Display options">
+        <PreferenceButton
+          label="Reduce motion"
+          selected={reducedMotion}
+          onPress={() => onReducedMotionChange(!reducedMotion)}
+        />
+        <PreferenceButton
+          label="Text only"
+          selected={textOnly}
+          onPress={() => onTextOnlyChange(!textOnly)}
+        />
+      </View>
     </View>
+  );
+}
+
+function PreferenceButton({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: selected }}
+      style={({ pressed }) => [
+        styles.preferenceButton,
+        selected && styles.preferenceButtonActive,
+        pressed && styles.pressed,
+      ]}
+    >
+      <Text style={[styles.preferenceText, selected && styles.preferenceTextActive]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -168,6 +217,20 @@ const styles = StyleSheet.create({
   speedText: { color: Colors.textPrimary, fontSize: FontSize.sm, fontWeight: FontWeight.semi },
   timeText: { marginLeft: "auto", color: Colors.textSecond, fontSize: FontSize.xs },
   steps: { gap: Spacing.xs },
+  preferenceRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.xs },
+  preferenceButton: {
+    minHeight: 44,
+    paddingHorizontal: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+  },
+  preferenceButtonActive: { borderColor: Colors.cyan, backgroundColor: Colors.cyanDim },
+  preferenceText: { color: Colors.textSecond, fontSize: FontSize.xs, fontWeight: FontWeight.medium },
+  preferenceTextActive: { color: Colors.cyan },
   stepButton: {
     width: 44,
     height: 44,

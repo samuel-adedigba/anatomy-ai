@@ -178,6 +178,11 @@ export class VisualEngine {
     this.sceneRuntime.setSpeed(speed);
   }
 
+  setReducedMotion(enabled: boolean): void {
+    this.sceneRuntime.setReducedMotion(enabled);
+    this.scene.requestRender();
+  }
+
   getSceneProgress(): ScenePlaybackProgress | null {
     return this.sceneRuntime.getProgress();
   }

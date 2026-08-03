@@ -155,6 +155,12 @@ export class ScenePlanRuntime {
     this.timeline.setSpeed(speed);
   }
 
+  setReducedMotion(enabled: boolean): void {
+    this.reducedMotion = enabled;
+    this.particles.setReducedMotion(enabled);
+    if (this.plan) this.renderAt(this.timeline.getTimeMs());
+  }
+
   getProgress(): ScenePlaybackProgress | null {
     if (!this.plan) return null;
     return this.createProgress(this.timeline.getTimeMs());

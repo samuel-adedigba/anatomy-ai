@@ -77,4 +77,5 @@ export type ScenePlaybackProgress = {
 export type ScenePlaybackCommand =
   | { type: "scene_control"; action: "play" | "pause" | "replay" }
   | { type: "scene_control"; action: "seek"; time_ms: number }
-  | { type: "scene_control"; action: "set_speed"; speed: number };
+  | { type: "scene_control"; action: "set_speed"; speed: number }
+  | { type: "scene_control"; action: "set_reduced_motion"; enabled: boolean };

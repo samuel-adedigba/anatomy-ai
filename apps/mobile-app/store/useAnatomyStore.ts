@@ -13,6 +13,7 @@
 
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AccessibilityInfo } from "react-native";
 import { SourceRef, ApiError, HealthStatus } from "../types/api";
 import type { ScenePlan } from "../types/scenePlan.generated";
 import { VisualCommand, ViewMode } from "../types/viewer";
@@ -22,6 +23,8 @@ import { askQuestion, getVisualCommand, checkHealth, isApiError } from "../servi
 const STORAGE_KEYS = {
   onboardingDismissed: "@anatomy_ai:onboarding_dismissed",
   lastViewMode:        "@anatomy_ai:last_view_mode",
+  reducedMotion:       "@anatomy_ai:reduced_motion",
+  textOnly:            "@anatomy_ai:text_only",
 } as const;
 
 // ─── State type ───────────────────────────────────────────────────────────────
@@ -52,6 +55,8 @@ type AnatomyState = {
 
   // UX
   onboardingDismissed: boolean;
+  reducedMotion: boolean;
+  textOnly: boolean;
   sessionId:      string;
 
   // Actions
@@ -62,6 +67,8 @@ type AnatomyState = {
   setViewerReady:         (ready: boolean) => void;
   setViewerLoading:       (loading: boolean) => void;
   setCurrentMode:         (mode: ViewMode) => void;
+  setReducedMotion:       (enabled: boolean) => void;
+  setTextOnly:            (enabled: boolean) => void;
   dismissOnboarding:      () => Promise<void>;
   refreshHealth:          () => Promise<void>;
   hydrate:                () => Promise<void>;
@@ -94,6 +101,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   serviceHealth: "offline",
 
   onboardingDismissed: false,
+  reducedMotion: false,
+  textOnly: false,
   sessionId: generateSessionId(),
 
   // ── Setters ─────────────────────────────────────────────────────────────────
@@ -134,6 +143,16 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   setCurrentMode: (mode) => {
     set({ currentMode: mode });
     AsyncStorage.setItem(STORAGE_KEYS.lastViewMode, mode).catch(() => {});
+  },
+
+  setReducedMotion: (enabled) => {
+    set({ reducedMotion: enabled });
+    AsyncStorage.setItem(STORAGE_KEYS.reducedMotion, String(enabled)).catch(() => {});
+  },
+
+  setTextOnly: (enabled) => {
+    set({ textOnly: enabled });
+    AsyncStorage.setItem(STORAGE_KEYS.textOnly, String(enabled)).catch(() => {});
   },
 
   // ── Submit a query ──────────────────────────────────────────────────────────
@@ -249,13 +268,20 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   // ── Hydrate persisted state on startup ──────────────────────────────────────
   hydrate: async () => {
     try {
-      const [dismissed, lastMode] = await Promise.all([
+      const [dismissed, lastMode, storedReducedMotion, storedTextOnly, systemReducedMotion] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEYS.onboardingDismissed),
         AsyncStorage.getItem(STORAGE_KEYS.lastViewMode),
+        AsyncStorage.getItem(STORAGE_KEYS.reducedMotion),
+        AsyncStorage.getItem(STORAGE_KEYS.textOnly),
+        AccessibilityInfo.isReduceMotionEnabled().catch(() => false),
       ]);
       set({
         onboardingDismissed: dismissed === "true",
         currentMode: (lastMode as ViewMode | null) ?? "full_body",
+        reducedMotion: storedReducedMotion === null
+          ? systemReducedMotion
+          : storedReducedMotion === "true",
+        textOnly: storedTextOnly === "true",
       });
     } catch {
       // Non-fatal: storage unavailable, use defaults

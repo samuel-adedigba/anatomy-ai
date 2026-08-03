@@ -8,6 +8,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppState,
   Keyboard,
   StyleSheet,
   useWindowDimensions,
@@ -54,6 +55,8 @@ export default function AnatomyWorkspace() {
   const onboardingDismissed = useAnatomyStore(
     (state) => state.onboardingDismissed
   );
+  const reducedMotion = useAnatomyStore((state) => state.reducedMotion);
+  const textOnly = useAnatomyStore((state) => state.textOnly);
 
   const setQuery = useAnatomyStore((state) => state.setQuery);
   const submitQuery = useAnatomyStore((state) => state.submitQuery);
@@ -62,6 +65,8 @@ export default function AnatomyWorkspace() {
   const setViewerReady = useAnatomyStore((state) => state.setViewerReady);
   const setViewerLoading = useAnatomyStore((state) => state.setViewerLoading);
   const setCurrentMode = useAnatomyStore((state) => state.setCurrentMode);
+  const setReducedMotion = useAnatomyStore((state) => state.setReducedMotion);
+  const setTextOnly = useAnatomyStore((state) => state.setTextOnly);
   const dismissOnboarding = useAnatomyStore(
     (state) => state.dismissOnboarding
   );
@@ -99,6 +104,29 @@ export default function AnatomyWorkspace() {
       viewerRef.current.sendCommand(currentCommand);
     }
   }, [currentCommand, currentScenePlan, viewerReady]);
+
+  useEffect(() => {
+    if (!viewerReady || !currentScenePlan) return;
+    viewerRef.current?.sendSceneControl({
+      type: "scene_control",
+      action: "set_reduced_motion",
+      enabled: reducedMotion,
+    });
+  }, [currentScenePlan, reducedMotion, viewerReady]);
+
+  useEffect(() => {
+    if (!viewerReady || !currentScenePlan || !textOnly) return;
+    viewerRef.current?.sendSceneControl({ type: "scene_control", action: "pause" });
+  }, [currentScenePlan, textOnly, viewerReady]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active" && sceneProgress?.state === "playing") {
+        viewerRef.current?.sendSceneControl({ type: "scene_control", action: "pause" });
+      }
+    });
+    return () => subscription.remove();
+  }, [sceneProgress?.state]);
 
   const handleSubmit = useCallback(() => {
     Keyboard.dismiss();
@@ -183,6 +211,13 @@ export default function AnatomyWorkspace() {
     viewerRef.current?.sendSceneControl({ type: "scene_control", action: "set_speed", speed });
   }, []);
 
+  const handleTextOnlyChange = useCallback((enabled: boolean) => {
+    setTextOnly(enabled);
+    if (enabled) {
+      viewerRef.current?.sendSceneControl({ type: "scene_control", action: "pause" });
+    }
+  }, [setTextOnly]);
+
   const viewerStage = (
     <ViewerStage
       ref={viewerRef}
@@ -193,6 +228,8 @@ export default function AnatomyWorkspace() {
       scenePlan={currentScenePlan}
       sceneProgress={sceneProgress}
       sceneSpeed={sceneSpeed}
+      reducedMotion={reducedMotion}
+      textOnly={textOnly}
       onReady={handleViewerReady}
       onReset={handleViewerReset}
       onModelLoading={handleModelLoading}
@@ -208,6 +245,8 @@ export default function AnatomyWorkspace() {
       onReplay={handleReplay}
       onStepSelect={handleStepSelect}
       onSpeedChange={handleSpeedChange}
+      onReducedMotionChange={setReducedMotion}
+      onTextOnlyChange={handleTextOnlyChange}
       style={styles.fill}
     />
   );

@@ -49,7 +49,7 @@ licence/distribution route, and remaining non-heart asset decisions are not reco
 Phase 1 now has authoritative JSON schemas, a capability registry, generated TypeScript
 contracts for all four consumers, instruction-engine and viewer validation, a legacy adapter,
 invalid fixtures, and a deterministic cardiovascular fixture displayed as ordered viewer
-steps. The current local evidence includes 11 instruction-engine tests and 13 viewer tests,
+steps. The current local evidence includes 16 instruction-engine tests and 14 viewer tests,
 including explicit scene-plan validation, supersession cancellation, morph restoration, and
 progress throttling. It remains `in progress` until the Phase 0 gate is cleared and the
 contract is accepted for downstream runtime integration.
@@ -89,15 +89,17 @@ planner regressions are also covered by the instruction-engine suite.
 Phase 6 is in progress. The Expo application sends complete scene plans to the embedded
 viewer and now consumes synchronized progress, step, completion, and fallback events. Mobile
 controls provide play, pause, replay, speed changes, step seeking, progress, and the current
-caption. The active plan is safely resent after a WebView reload. Reduced-motion and text-only
-preferences, device rotation/background verification, screen-reader verification, and
-physical-device end-to-end evidence remain open. Narration remains optional and deferred.
+caption. The active plan is safely resent after a WebView reload. Persistent reduced-motion
+and text-only preferences are available, and active playback pauses when the app moves to the
+background. Device-rotation verification, screen-reader verification, and physical-device
+end-to-end evidence remain open. Narration remains optional and deferred.
 
 Phase 7 is in progress. Embedded viewer navigation and browser message handling are restricted
-to the configured viewer origin, and content correction and rollback procedures are recorded
-in `docs/release/content-correction-and-rollback.md`. Visual regression baselines, continuous
-integration, repeated-query soak evidence, offline verification, and final cross-functional
-approval remain open.
+to the configured viewer origin, content correction and rollback procedures are recorded in
+`docs/release/content-correction-and-rollback.md`, and TypeScript application checks are
+defined in `.github/workflows/quality.yml`. Visual regression baselines, a successful hosted
+CI run, repeated-query soak evidence, offline verification, and final cross-functional approval
+remain open.
 
 ## 2. Product vision
 

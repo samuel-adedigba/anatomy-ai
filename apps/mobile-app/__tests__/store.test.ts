@@ -5,6 +5,8 @@
 
 import { useAnatomyStore } from "../store/useAnatomyStore";
 import * as apiClient from "../services/apiClient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AccessibilityInfo } from "react-native";
 
 // Mock async-storage so store hydration doesn't fail
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -57,9 +59,38 @@ beforeEach(() => {
     viewerLoading:  false,
     serviceHealth:  "offline",
     onboardingDismissed: false,
+    reducedMotion: false,
+    textOnly: false,
     sessionId: "test-session",
   });
   jest.clearAllMocks();
+});
+
+describe("accessibility preferences", () => {
+  it("persists reduced-motion and text-only choices", () => {
+    useAnatomyStore.getState().setReducedMotion(true);
+    useAnatomyStore.getState().setTextOnly(true);
+
+    expect(useAnatomyStore.getState().reducedMotion).toBe(true);
+    expect(useAnatomyStore.getState().textOnly).toBe(true);
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      "@anatomy_ai:reduced_motion",
+      "true"
+    );
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      "@anatomy_ai:text_only",
+      "true"
+    );
+  });
+
+  it("uses the system reduced-motion setting when no choice is stored", async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+    jest.spyOn(AccessibilityInfo, "isReduceMotionEnabled").mockResolvedValue(true);
+
+    await useAnatomyStore.getState().hydrate();
+
+    expect(useAnatomyStore.getState().reducedMotion).toBe(true);
+  });
 });
 
 // ─── setQuery ─────────────────────────────────────────────────────────────────
