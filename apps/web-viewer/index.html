@@ -264,19 +264,33 @@
         padding: 0;
         list-style: none;
       }
-      #scene-plan-steps li {
+      .scene-step-button {
         display: grid;
+        width: 100%;
         grid-template-columns: 34px minmax(0, 1fr);
         gap: 9px;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
         color: var(--text-second);
+        padding: 4px;
+        text-align: left;
+        font: inherit;
         font-size: 12px;
         line-height: 1.45;
+        cursor: pointer;
+      }
+      .scene-step-button:hover,
+      .scene-step-button:focus-visible {
+        background: var(--accent-dim);
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
       }
       .scene-step-time {
         color: var(--accent);
         font-variant-numeric: tabular-nums;
       }
-      #scene-plan-steps li[data-active="true"] {
+      #scene-plan-steps li[data-active="true"] .scene-step-button {
         color: var(--text);
       }
       #scene-plan-steps li[data-active="true"] .scene-step-time {

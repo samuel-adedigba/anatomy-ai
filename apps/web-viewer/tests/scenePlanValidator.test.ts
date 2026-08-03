@@ -95,6 +95,47 @@ test("viewer accepts the cardiovascular fixture", () => {
   assert.equal(result.plan.steps.length, 5);
 });
 
+test("cardiovascular fixture covers the reviewed vertical-slice learning path", () => {
+  const result = validateScenePlan(cloneFixture());
+  assert.equal(result.success, true);
+  if (!result.success) return;
+
+  assert.deepEqual(result.plan.required_assets, ["heart.educational.v1"]);
+  assert.deepEqual(
+    result.plan.tracks
+      .filter((track) => track.action === "show_label")
+      .map((track) => track.target),
+    [
+      "heart.right_atrium",
+      "heart.right_ventricle",
+      "heart.left_atrium",
+      "heart.left_ventricle",
+      "heart.tricuspid_valve",
+      "heart.pulmonary_valve",
+      "heart.mitral_valve",
+      "heart.aortic_valve",
+    ]
+  );
+  assert.deepEqual(
+    result.plan.tracks
+      .filter((track) => track.action === "particle_flow")
+      .map((track) => track.path),
+    [
+      "body_to_right_atrium",
+      "right_atrium_to_right_ventricle",
+      "right_ventricle_to_lungs",
+      "lungs_to_left_atrium",
+      "left_atrium_to_left_ventricle",
+      "left_ventricle_to_body",
+    ]
+  );
+  assert.match(result.plan.steps[1].caption, /right atrium/i);
+  assert.match(result.plan.steps[2].caption, /lungs/i);
+  assert.match(result.plan.steps[4].caption, /aorta/i);
+  assert.equal(result.plan.fallback.view_mode, "heart");
+  assert.match(result.plan.fallback.message, /static heart view/i);
+});
+
 test("viewer rejects unknown renderer capabilities", () => {
   assert.equal(validateScenePlan(unknownActionFixture).success, false);
   assert.equal(validateScenePlan(unknownTargetFixture).success, false);

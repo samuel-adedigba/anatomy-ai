@@ -62,6 +62,7 @@ let activeViewMode: ViewMode =
 let activeScenePlan: ScenePlan | null = null;
 let engine: VisualEngine | null = null;
 let enginePromise: Promise<VisualEngine> | null = null;
+let sceneReadyPromise: Promise<void> | null = null;
 
 // Three.js is loaded only when a user command or an explicit scene plan
 // arrives. The initial embedded viewer therefore stays inert and lightweight.
@@ -279,17 +280,27 @@ function showScenePlan(plan: ScenePlan): void {
   activeViewMode = plan.fallback.view_mode as ViewMode;
   if (viewSelect) viewSelect.value = activeViewMode;
   renderScenePlanSteps(plan, {
-    onTogglePlay: () => {
+    onTogglePlay: () => afterSceneReady(() => {
       const state = engine?.getSceneProgress()?.state;
       if (state === "playing") engine?.pauseScene();
       else engine?.playScene();
+    }),
+    onReplay: () => afterSceneReady(() => engine?.replayScene()),
+    onSeek: (timeMs) => afterSceneReady(() => engine?.seekScene(timeMs)),
+    onStepSelect: (timeMs) => {
+      afterSceneReady(() => {
+        engine?.pauseScene();
+        engine?.seekScene(timeMs);
+      });
     },
-    onReplay: () => engine?.replayScene(),
-    onSeek: (timeMs) => engine?.seekScene(timeMs),
-    onSpeedChange: (speed) => engine?.setSceneSpeed(speed),
+    onSpeedChange: (speed) => afterSceneReady(() => engine?.setSceneSpeed(speed)),
   });
   renderScenePlanSources(plan);
-  void executeScenePlan(plan);
+  sceneReadyPromise = executeScenePlan(plan);
+}
+
+function afterSceneReady(action: () => void): void {
+  void (sceneReadyPromise ?? Promise.resolve()).then(action);
 }
 
 async function loadHeartExplanation(): Promise<void> {

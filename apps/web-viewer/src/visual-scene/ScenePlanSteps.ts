@@ -4,6 +4,7 @@ export type ScenePlanControls = {
   onTogglePlay: () => void;
   onReplay: () => void;
   onSeek: (timeMs: number) => void;
+  onStepSelect: (timeMs: number) => void;
   onSpeedChange: (speed: number) => void;
 };
 
@@ -24,14 +25,20 @@ export function renderScenePlanSteps(plan: ScenePlan, controls?: ScenePlanContro
     ...plan.steps.map((step, index) => {
       const item = document.createElement("li");
       const time = document.createElement("span");
+      const stepButton = document.createElement("button");
       const caption = document.createElement("span");
       item.dataset.stepId = step.id;
       item.dataset.active = index === 0 ? "true" : "false";
-      item.setAttribute("aria-current", index === 0 ? "step" : "false");
       time.className = "scene-step-time";
       time.textContent = formatTime(step.start_ms);
       caption.textContent = step.caption;
-      item.append(time, caption);
+      stepButton.type = "button";
+      stepButton.className = "scene-step-button";
+      stepButton.dataset.stepId = step.id;
+      stepButton.setAttribute("aria-label", `Go to step ${index + 1}: ${step.caption}`);
+      stepButton.setAttribute("aria-current", index === 0 ? "step" : "false");
+      stepButton.append(time, caption);
+      item.append(stepButton);
       return item;
     })
   );
@@ -43,6 +50,10 @@ export function renderScenePlanSteps(plan: ScenePlan, controls?: ScenePlanContro
   if (controls && play && replay && seek && speed) {
     play.onclick = controls.onTogglePlay;
     replay.onclick = controls.onReplay;
+    list.querySelectorAll<HTMLButtonElement>(".scene-step-button").forEach((button) => {
+      const step = plan.steps.find((candidate) => candidate.id === button.dataset.stepId);
+      if (step) button.onclick = () => controls.onStepSelect(step.start_ms);
+    });
     seek.oninput = () => {
       controls.onSeek((Number(seek.value) / 1000) * plan.duration_ms);
     };
@@ -78,7 +89,7 @@ export function updateScenePlanPlayback(
   document.querySelectorAll<HTMLElement>("#scene-plan-steps li").forEach((item) => {
     const active = item.dataset.stepId === activeStep?.id;
     item.dataset.active = active ? "true" : "false";
-    item.setAttribute("aria-current", active ? "step" : "false");
+    item.querySelector(".scene-step-button")?.setAttribute("aria-current", active ? "step" : "false");
   });
   labelList.replaceChildren(
     ...labels.map((label) => {
@@ -97,6 +108,9 @@ export function renderScenePlanFallback(message: string): void {
     .forEach((control) => {
       if (control) control.disabled = true;
     });
+  document.querySelectorAll<HTMLButtonElement>(".scene-step-button").forEach((button) => {
+    button.disabled = true;
+  });
 }
 
 function stateLabel(state: "idle" | "playing" | "paused" | "completed"): string {

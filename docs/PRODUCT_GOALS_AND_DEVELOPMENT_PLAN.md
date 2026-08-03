@@ -70,9 +70,11 @@ full integration evidence are recorded, or an approved remediation plan is attac
 
 Phase 4 has started with the deterministic cardiovascular vertical slice. The standalone
 viewer now provides a “Play heart explanation” launch action, synchronized step controls,
-flow legend, evidence references, and visible educational simplifications. Medical review,
-accessibility review, user comprehension testing, and reference-device performance evidence
-remain open, so the phase is not complete.
+clickable step navigation for inspection, flow legend, evidence references, and visible
+educational simplifications. The local viewer suite now includes a cardiovascular acceptance
+fixture covering all four chambers, four valves, six directional flow paths, captions, and
+the static fallback contract. Medical review, accessibility review, user comprehension
+testing, and reference-device performance evidence remain open, so the phase is not complete.
 
 ## 2. Product vision
 
