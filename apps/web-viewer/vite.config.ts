@@ -10,6 +10,9 @@ const MODELS_DIR = fileURLToPath(
 const VISUAL_SCENE_DIR = fileURLToPath(
   new URL("../../configs/visual-scene/", import.meta.url)
 );
+const ASSET_MANIFEST_DIR = fileURLToPath(
+  new URL("../../engines/anatomy-assets/manifests/", import.meta.url)
+);
 const MODEL_FILES = [
   "full_body.glb",
   "skeleton.glb",
@@ -21,12 +24,19 @@ const MODEL_FILES = [
   "brain.glb",
   "heart.glb",
   "spine.glb",
+  "heart.educational.v1.glb",
+  "circulation.major-vessels.v1.glb",
 ] as const;
 const MODEL_FILE_SET = new Set<string>(MODEL_FILES);
 const VISUAL_SCENE_FILES = [
   "fixtures/cardiovascular.normal-circulation.v1.json",
 ] as const;
 const VISUAL_SCENE_FILE_SET = new Set<string>(VISUAL_SCENE_FILES);
+const ASSET_MANIFEST_FILES = [
+  "heart.educational.v1.json",
+  "circulation.major-vessels.v1.json",
+] as const;
+const ASSET_MANIFEST_FILE_SET = new Set<string>(ASSET_MANIFEST_FILES);
 
 function anatomyModels(): Plugin {
   return {
@@ -61,6 +71,23 @@ function anatomyModels(): Plugin {
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         fs.createReadStream(path.join(VISUAL_SCENE_DIR, relativePath)).pipe(res);
       });
+      server.middlewares.use("/manifests", (req, res, next) => {
+        const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+        const fileName = path.basename(decodeURIComponent(pathname));
+        if (!ASSET_MANIFEST_FILE_SET.has(fileName)) {
+          next();
+          return;
+        }
+
+        const manifestPath = path.join(ASSET_MANIFEST_DIR, fileName);
+        if (!fs.existsSync(manifestPath)) {
+          res.statusCode = 404;
+          res.end("Manifest not found");
+          return;
+        }
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        fs.createReadStream(manifestPath).pipe(res);
+      });
     },
     writeBundle(options) {
       if (!options.dir) return;
@@ -86,6 +113,15 @@ function anatomyModels(): Plugin {
           path.join(VISUAL_SCENE_DIR, relativePath),
           destination
         );
+      }
+
+      const outputManifestDir = path.resolve(VIEWER_ROOT, options.dir, "manifests");
+      fs.mkdirSync(outputManifestDir, { recursive: true });
+      for (const fileName of ASSET_MANIFEST_FILES) {
+        const source = path.join(ASSET_MANIFEST_DIR, fileName);
+        if (fs.existsSync(source)) {
+          fs.copyFileSync(source, path.join(outputManifestDir, fileName));
+        }
       }
     },
   };

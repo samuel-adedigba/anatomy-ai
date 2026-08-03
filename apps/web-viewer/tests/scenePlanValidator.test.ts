@@ -7,6 +7,7 @@ import unknownActionFixture from "../../../configs/visual-scene/fixtures/invalid
 import unknownTargetFixture from "../../../configs/visual-scene/fixtures/invalid/unknown-target.json";
 import versionMismatchFixture from "../../../configs/visual-scene/fixtures/invalid/version-mismatch.json";
 import { validateScenePlan } from "../src/visual-scene/scenePlanValidator";
+import { TimelinePlayer } from "../src/timeline/TimelinePlayer";
 
 type MutableFixture = {
   schema_version: string;
@@ -56,7 +57,7 @@ test("viewer rejects incompatible capabilities and missing flow assets", () => {
   const missingFlowAsset = cloneFixture() as MutableFixture & {
     required_assets: string[];
   };
-  missingFlowAsset.required_assets = ["heart.educational.v1"];
+  missingFlowAsset.required_assets = ["circulation.major-vessels.v1"];
 
   assert.equal(validateScenePlan(clipTargetMismatch).success, false);
   assert.equal(validateScenePlan(labelMismatch).success, false);
@@ -74,4 +75,48 @@ test("viewer rejects plans above collection limits", () => {
   }));
 
   assert.equal(validateScenePlan(plan).success, false);
+});
+
+test("timeline pause freezes the shared scene clock", () => {
+  const timeline = new TimelinePlayer();
+  timeline.load(1000, false, [
+    { id: "flow", start_ms: 0, duration_ms: 1000 },
+  ]);
+  timeline.play();
+  timeline.update(0.25);
+  timeline.pause();
+  timeline.update(0.75);
+
+  assert.equal(timeline.getTimeMs(), 250);
+  assert.equal(timeline.getState(), "paused");
+});
+
+test("timeline replay emits the same track order", () => {
+  const events: string[] = [];
+  const timeline = new TimelinePlayer({
+    onTrackEvent: (event) => events.push(`${event.type}:${event.track_id}`),
+  });
+  timeline.load(100, false, [
+    { id: "heartbeat", start_ms: 0, duration_ms: 100 },
+  ]);
+  timeline.play();
+  timeline.update(0.2);
+  timeline.replay();
+  timeline.update(0.2);
+
+  assert.deepEqual(events, [
+    "track_start:heartbeat",
+    "track_end:heartbeat",
+    "track_start:heartbeat",
+    "track_end:heartbeat",
+  ]);
+});
+
+test("timeline seek clamps to the scene duration", () => {
+  const timeline = new TimelinePlayer();
+  timeline.load(500, false, []);
+  timeline.seek(900);
+
+  assert.equal(timeline.getTimeMs(), 500);
+  assert.equal(timeline.getState(), "completed");
 });

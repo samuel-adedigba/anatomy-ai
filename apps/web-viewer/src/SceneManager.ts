@@ -12,6 +12,7 @@ export class SceneManager {
   controls: OrbitControls;
   private animationId: number = 0;
   private updateCallbacks: Array<(delta: number) => void> = [];
+  private renderCallbacks: Array<() => void> = [];
   private clock = new THREE.Clock();
   private resizeObserver?: ResizeObserver;
 
@@ -81,6 +82,11 @@ export class SceneManager {
     this.updateCallbacks.push(fn);
   }
 
+  /** Register a callback that runs after the WebGL scene has rendered. */
+  addRenderCallback(fn: () => void): void {
+    this.renderCallbacks.push(fn);
+  }
+
   start(): void {
     const loop = () => {
       this.animationId = requestAnimationFrame(loop);
@@ -88,6 +94,7 @@ export class SceneManager {
       this.updateCallbacks.forEach((fn) => fn(delta));
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
+      this.renderCallbacks.forEach((fn) => fn());
     };
     loop();
   }

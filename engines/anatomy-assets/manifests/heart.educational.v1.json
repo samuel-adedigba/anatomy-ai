@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "asset_id": "heart.educational.v1",
+  "file": "/models/heart.educational.v1.glb",
+  "sha256": "65042efed6fabe0212ea9f4ec93991e6673f658e0d18f9c23b52c81829c0b459",
+  "source": {
+    "name": "Z-Anatomy Models of human anatomy",
+    "revision": "c46e965d0bc7f1ce5de205b5a85db8c2c92bf827",
+    "url": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "licence": "CC BY-SA 4.0",
+    "attribution": "BodyParts3D, Z-Anatomy, and upstream contributors recorded by the source revision"
+  },
+  "modifications": [
+    "Mapped source object names to stable semantic heart targets.",
+    "Corrected the source hierarchy of the posterior mitral leaflet.",
+    "Derived anterior mitral and tricuspid leaflet geometry from source leaflets for this development build.",
+    "Authored a synchronized 0.8-second cardiac cycle at 75 beats per minute.",
+    "Added atrial and ventricular deformation morphs with longitudinal shortening and ventricular twist.",
+    "Added hinge-articulated atrioventricular and semilunar valve morphs with non-overlapping isovolumetric closure windows.",
+    "Added six directional circulation paths with oxygenation-state metadata, Y-up centerlines, and arrowheads.",
+    "Removed unrelated peripheral vessel descendants and exported without Draco compression."
+  ],
+  "targets": {
+    "heart": "HeartRoot",
+    "heart.right_atrium": "RightAtrium",
+    "heart.right_ventricle": "RightVentricle",
+    "heart.left_atrium": "LeftAtrium",
+    "heart.left_ventricle": "LeftVentricle",
+    "heart.tricuspid_valve": "TricuspidValve",
+    "heart.pulmonary_valve": "PulmonaryValve",
+    "heart.mitral_valve": "MitralValve",
+    "heart.aortic_valve": "AorticValve",
+    "heart.vena_cavae": "VenaCavae",
+    "heart.pulmonary_artery": "PulmonaryArtery",
+    "heart.pulmonary_veins": "PulmonaryVeins",
+    "heart.aorta": "Aorta"
+  },
+  "clips": {
+    "normal_cardiac_cycle": "CardiacCycle"
+  },
+  "morphs": {
+    "atrial_systole": "atrial_systole",
+    "ventricular_systole": "ventricular_systole"
+  },
+  "paths": {
+    "body_to_right_atrium": "BodyToRightAtriumPath",
+    "right_atrium_to_right_ventricle": "RightAtriumToRightVentriclePath",
+    "right_ventricle_to_lungs": "RightVentricleToLungsPath",
+    "lungs_to_left_atrium": "LungsToLeftAtriumPath",
+    "left_atrium_to_left_ventricle": "LeftAtriumToLeftVentriclePath",
+    "left_ventricle_to_body": "LeftVentricleToBodyPath"
+  },
+  "materials": {
+    "FlowOxygenPoor": [
+      "oxygen_poor_blood"
+    ],
+    "FlowOxygenRich": [
+      "oxygen_rich_blood"
+    ]
+  },
+  "coordinate_system": "y_up",
+  "units": "metres",
+  "scale": 1,
+  "bounds": {
+    "min": [-0.04513768572360277, 1.1704781390726566, -0.04302724590525031],
+    "max": [0.11533764749765396, 1.454283356666565, 0.08120832199892677]
+  },
+  "performance": {
+    "bytes": 1818704,
+    "node_count": 103,
+    "mesh_count": 49,
+    "primitive_count": 49
+  },
+  "review": {
+    "status": "approved",
+    "reviewer": "Product owner",
+    "role": "User-authorized development approval",
+    "date": "2026-08-03"
+  },
+  "known_simplifications": [
+    "This is a research-aligned educational visualization, not a biomechanical or fluid simulation.",
+    "The source lacked one visible mitral leaflet and one visible tricuspid leaflet; derived replacements are disclosed in GLB extras.",
+    "Ventricular wall thickening and twist are procedural approximations rather than measurements fitted to imaging from a specific subject.",
+    "Flow curves encode anatomical order and oxygenation state; moving blood particles are implemented by the Phase 3 runtime.",
+    "Flow colors are educational conventions and do not represent literal blood color."
+  ]
+}

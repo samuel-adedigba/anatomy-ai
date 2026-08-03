@@ -2,7 +2,7 @@
 // Source: configs/visual-scene/capability-registry.json. Do not edit by hand.
 
 export const SCENE_PLAN_SCHEMA_VERSION = "1.0" as const;
-export const CAPABILITY_REGISTRY_VERSION = "1.0.0" as const;
+export const CAPABILITY_REGISTRY_VERSION = "1.1.0" as const;
 
 export const SCENE_ACTIONS = [
   "play_clip",
@@ -60,8 +60,10 @@ export const ANIMATION_MORPHS = [
 
 export const FLOW_PATHS = [
   "body_to_right_atrium",
+  "right_atrium_to_right_ventricle",
   "right_ventricle_to_lungs",
   "lungs_to_left_atrium",
+  "left_atrium_to_left_ventricle",
   "left_ventricle_to_body"
 ] as const;
 
@@ -116,8 +118,8 @@ export const TARGET_ASSETS = {
   "heart.pulmonary_artery": "heart.educational.v1",
   "heart.pulmonary_veins": "heart.educational.v1",
   "heart.aorta": "heart.educational.v1",
-  "circulation.pulmonary": "circulation.major-vessels.v1",
-  "circulation.systemic": "circulation.major-vessels.v1"
+  "circulation.pulmonary": "heart.educational.v1",
+  "circulation.systemic": "heart.educational.v1"
 } as const;
 export const CLIP_TARGETS = {
   "normal_cardiac_cycle": [
@@ -141,32 +143,42 @@ export const FLOW_PATH_REQUIREMENTS = {
     "target": "circulation.systemic",
     "state": "oxygen_poor_blood",
     "required_assets": [
-      "heart.educational.v1",
-      "circulation.major-vessels.v1"
+      "heart.educational.v1"
+    ]
+  },
+  "right_atrium_to_right_ventricle": {
+    "target": "heart",
+    "state": "oxygen_poor_blood",
+    "required_assets": [
+      "heart.educational.v1"
     ]
   },
   "right_ventricle_to_lungs": {
     "target": "circulation.pulmonary",
     "state": "oxygen_poor_blood",
     "required_assets": [
-      "heart.educational.v1",
-      "circulation.major-vessels.v1"
+      "heart.educational.v1"
     ]
   },
   "lungs_to_left_atrium": {
     "target": "circulation.pulmonary",
     "state": "oxygen_rich_blood",
     "required_assets": [
-      "heart.educational.v1",
-      "circulation.major-vessels.v1"
+      "heart.educational.v1"
+    ]
+  },
+  "left_atrium_to_left_ventricle": {
+    "target": "heart",
+    "state": "oxygen_rich_blood",
+    "required_assets": [
+      "heart.educational.v1"
     ]
   },
   "left_ventricle_to_body": {
     "target": "circulation.systemic",
     "state": "oxygen_rich_blood",
     "required_assets": [
-      "heart.educational.v1",
-      "circulation.major-vessels.v1"
+      "heart.educational.v1"
     ]
   }
 } as const;

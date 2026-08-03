@@ -100,12 +100,14 @@ window.executeCommand({
 
 The standalone viewer loads
 `configs/visual-scene/fixtures/cardiovascular.normal-circulation.v1.json`, validates every
-action and semantic identifier, and displays the ordered learning steps. A host may send the
-same ScenePlan through `postMessage`, or developers may call `window.loadScenePlan(plan)`.
+action and semantic identifier, then sends it through the deterministic runtime. A host may send
+the same ScenePlan through `postMessage`, or developers may call `window.loadScenePlan(plan)`.
 
-This milestone intentionally displays the synchronized contract without executing animation
-tracks. Runtime playback begins only after the reviewed heart asset exposes chamber targets,
-heartbeat motion, and flow paths.
+The runtime provides one clock for playback, pause, replay, seek, speed changes, concurrent
+clips and morphs, manifest-resolved targets, directional particle flow, timed labels, camera
+actions, reduced-motion behavior, cleanup, and progress events. When a required asset or
+manifest is unavailable, the viewer shows the fixture's static fallback and reports the reason.
+Pending asset or licence review does not get bypassed by the runtime.
 
 ---
 
@@ -119,7 +121,10 @@ type ViewerToMobileMessage =
   | { type: "model_loading"; view_mode: ViewMode }
   | { type: "model_loaded";  view_mode: ViewMode }
   | { type: "viewer_error";  message: string; view_mode?: ViewMode }
-  | { type: "command_complete"; view_mode: ViewMode };
+  | { type: "command_complete"; view_mode: ViewMode }
+  | { type: "scene_progress"; plan_id: string; time_ms: number; duration_ms: number; state: string; step_id?: string }
+  | { type: "scene_complete"; plan_id: string }
+  | { type: "scene_fallback"; plan_id: string; message: string };
 ```
 
 Listen in React Native:
@@ -143,6 +148,26 @@ Listen in React Native:
 3. Add the `ViewMode` key to `apps/web-viewer/src/types.ts` and `apps/mobile-app/types/viewer.ts`.
 4. Add GLTF mesh node names to `services/instruction-engine/src/types/regionMap.ts`.
 5. Add an entry to `apps/mobile-app/constants/anatomy.ts`.
+
+For the reviewed Phase 2 heart asset, also create its manifest and run the repository gate:
+
+```bash
+node scripts/anatomy/validate-asset-manifest.mjs \
+  --manifest engines/anatomy-assets/manifests/heart.educational.v1.json
+```
+
+Do not treat `--allow-pending` as approval; it only allows capability inspection while licence
+or medical review is still open.
+
+To prepare the working asset from the Blender source, run this from the repository root on a
+machine with Blender 5.x installed:
+
+```bash
+./scripts/anatomy/prepare-heart-asset.sh
+```
+
+The script intentionally exports with Draco disabled because `ModelLoader` does not currently
+configure a `DRACOLoader`. Its generated heartbeat and flow paths remain review-required.
 
 **Important:** Mesh node names in the `.glb` file must exactly match the strings used in `highlight[]` arrays. Inspect node names with `gltf-transform inspect file.glb` or Blender.
 
@@ -173,10 +198,12 @@ pnpm tsc --noEmit
 
 - `full_body.glb` (141 MB) and `muscular.glb` (56 MB) exceed the 20 MB mobile guidance. Optimise before production.
 - `circulatory.glb` (34 MB) also exceeds the 20 MB mobile guidance.
-- Current single-mesh heart and circulatory assets do not expose the semantic targets or
-  animation capabilities required by ScenePlan v1.
+- The legacy `heart.glb` and `circulatory.glb` assets do not expose the semantic targets or
+  animation capabilities required by ScenePlan v1. The approved `heart.educational.v1` asset
+  is served separately for the cardiovascular development fixture.
 - `engines/anatomy-assets/models/isa_element_parts.txt` and `isa_parts_list_e.txt` are stray BodyParts3D metadata files that should be removed from the served directory.
 - The browser bridge accepts commands only from its direct parent frame. A hosted deployment
   should also configure an explicit allowed parent origin.
-- Licence compatibility of bundled GLB assets must be approved before distribution. See
-  `engines/anatomy-assets/manifests/asset-licence-ledger.md`.
+- The heart development asset approval and attribution obligations are recorded in
+  `engines/anatomy-assets/manifests/asset-licence-ledger.md`; other bundled GLB assets remain
+  outside this approval.

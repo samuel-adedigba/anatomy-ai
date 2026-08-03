@@ -175,7 +175,10 @@ type ViewerToMobileMessage =
   | { type: "model_loading"; view_mode: ViewMode }
   | { type: "model_loaded";  view_mode: ViewMode }
   | { type: "viewer_error";  message: string; view_mode?: ViewMode }
-  | { type: "command_complete"; view_mode: ViewMode };
+  | { type: "command_complete"; view_mode: ViewMode }
+  | { type: "scene_progress"; plan_id: string; time_ms: number; duration_ms: number; state: string; step_id?: string }
+  | { type: "scene_complete"; plan_id: string }
+  | { type: "scene_fallback"; plan_id: string; message: string };
 ```
 
 The `AnatomyViewer` organism handles all of this internally. The store is updated through the callbacks passed to it.

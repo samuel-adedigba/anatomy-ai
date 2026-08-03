@@ -28,7 +28,7 @@
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
-      #canvas-container { width: 100vw; height: 100vh; }
+      #canvas-container { position: relative; width: 100vw; height: 100vh; }
 
       /* ── Dev UI overlay (hidden when embedded in WebView) ── */
       #viewer-ui {
@@ -158,6 +158,65 @@
         font-size: 11px;
         line-height: 1.4;
       }
+      .scene-plan-controls {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        margin-top: 14px;
+      }
+      .scene-plan-controls button,
+      .scene-plan-controls select {
+        min-height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface-high);
+        color: var(--text);
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 11px;
+      }
+      .scene-plan-controls button { cursor: pointer; }
+      .scene-plan-controls button:hover,
+      .scene-plan-controls button:focus-visible,
+      .scene-plan-controls select:focus-visible {
+        border-color: var(--accent);
+        outline: 2px solid var(--accent-dim);
+        outline-offset: 1px;
+      }
+      .scene-plan-controls input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+      .scene-plan-caption {
+        min-height: 34px;
+        margin-top: 10px;
+        color: var(--text-second);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .scene-plan-legend,
+      .scene-plan-labels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        color: var(--text-muted);
+        font-size: 10px;
+      }
+      .scene-plan-legend span,
+      .scene-plan-labels span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+      }
+      .legend-dot.oxygen-poor { background: #2e9bff; }
+      .legend-dot.oxygen-rich { background: #ff5c65; }
       #scene-plan-steps {
         display: grid;
         gap: 9px;
@@ -176,6 +235,34 @@
       .scene-step-time {
         color: var(--accent);
         font-variant-numeric: tabular-nums;
+      }
+      #scene-plan-steps li[data-active="true"] {
+        color: var(--text);
+      }
+      #scene-plan-steps li[data-active="true"] .scene-step-time {
+        font-weight: 700;
+      }
+      .scene-label {
+        display: block;
+        padding: 4px 7px;
+        border: 1px solid rgba(78, 217, 198, 0.65);
+        border-radius: 7px;
+        background: rgba(4, 9, 14, 0.82);
+        color: var(--text);
+        font-size: 11px;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       /* ── Loading overlay ── */
@@ -313,6 +400,26 @@
       <p class="scene-plan-kicker">Planned visual sequence</p>
       <h2 id="scene-plan-title"></h2>
       <p id="scene-plan-status"></p>
+      <div class="scene-plan-controls" aria-label="Scene playback controls">
+        <button id="scene-plan-play" type="button">Pause</button>
+        <button id="scene-plan-replay" type="button">Replay</button>
+        <label>
+          <span class="sr-only">Playback speed</span>
+          <select id="scene-plan-speed" aria-label="Playback speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select>
+        </label>
+        <input id="scene-plan-seek" type="range" min="0" max="1000" value="0" aria-label="Seek scene timeline" />
+      </div>
+      <p id="scene-plan-caption" class="scene-plan-caption" aria-live="polite"></p>
+      <div class="scene-plan-legend" aria-label="Flow legend">
+        <span><i class="legend-dot oxygen-poor" aria-hidden="true"></i>Oxygen-poor blood</span>
+        <span><i class="legend-dot oxygen-rich" aria-hidden="true"></i>Oxygen-rich blood</span>
+      </div>
+      <div id="scene-plan-labels" class="scene-plan-labels" aria-live="polite"></div>
       <ol id="scene-plan-steps"></ol>
     </section>
 

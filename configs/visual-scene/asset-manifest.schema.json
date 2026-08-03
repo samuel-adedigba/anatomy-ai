@@ -107,8 +107,10 @@
       "propertyNames": {
         "enum": [
           "body_to_right_atrium",
+          "right_atrium_to_right_ventricle",
           "right_ventricle_to_lungs",
           "lungs_to_left_atrium",
+          "left_atrium_to_left_ventricle",
           "left_ventricle_to_body"
         ]
       },

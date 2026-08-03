@@ -86,6 +86,15 @@ export class CameraController {
     this._syncControls();
   }
 
+  focusObject(object: THREE.Object3D): void {
+    this.frameObject(object);
+  }
+
+  orbitAroundTarget(angle: number): void {
+    this._rotateAroundY(angle);
+    this._syncControls();
+  }
+
   private _setViewDirection(dx: number, dy: number, dz: number): void {
     const offset = this.camera.position.clone().sub(this.target);
     const distance = offset.length();

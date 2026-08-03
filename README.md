@@ -21,6 +21,47 @@ The standalone viewer validates and lists the deterministic cardiovascular steps
 play realistic heartbeat or flow motion yet because the current GLBs have no semantic chamber
 nodes, reviewed animation clip, morph targets, or flow paths.
 
+### Prepare the Phase 2 heart asset
+
+Run this command on a machine with Blender 5.x installed. It finds the compatible Blender
+executable, opens the source `.blend` without
+modifying it, creates the required semantic nodes and flow paths, exports a GLB without Draco,
+and verifies the exported nodes and `CardiacCycle` clip:
+
+```bash
+./scripts/anatomy/prepare-heart-asset.sh
+```
+
+Set `ANATOMY_BLENDER_BIN=/absolute/path/to/blender` only when Blender is installed outside
+`~/Downloads`, `/opt`, or `PATH`.
+The source working file is intentionally ignored; on a clean checkout, acquire and verify the
+source described in `docs/asset-intake/heart-asset-candidate.md`, then set
+`ANATOMY_HEART_SOURCE=/absolute/path/to/heart.educational.v1.blend`.
+
+Preview the exported GLB and its animation in Blender:
+
+```bash
+./scripts/anatomy/prepare-heart-asset.sh preview
+```
+
+The preview opens in Material Preview mode and starts frames 1-25 at 30 fps automatically
+(0.8 seconds per beat, 75 bpm). Press Space
+to pause or resume, use the timeline to seek, and press the left arrow to return to frame 1.
+
+Render six phase-check frames, including both all-valves-closed intervals, without opening
+Blender's interface:
+
+```bash
+./scripts/anatomy/prepare-heart-asset.sh render-audit
+```
+
+The PNG files are written to
+`engines/anatomy-assets/work/heart-source/audit-renders/` for side-by-side review.
+
+The generated asset is still pending medical, flow-direction, licence, and Android visual
+review. After those approvals, copy it to `engines/anatomy-assets/models/` and run the asset
+manifest gate; the preparation script does not grant production approval.
+
 ---
 
 ## Architecture
@@ -321,6 +362,19 @@ or optimize them for the web viewer as needed.
 5. Add entry to `apps/mobile-app/constants/anatomy.ts`
 
 Keep each `.glb` under 20 MB for mobile WebView performance. Use `gltf-transform optimize` for large files.
+
+For the Phase 2 heart asset, prepare a manifest and run the production gate before adding the
+GLB to the served model directory:
+
+```bash
+node scripts/anatomy/validate-asset-manifest.mjs \
+  --manifest engines/anatomy-assets/manifests/heart.educational.v1.json
+```
+
+The gate verifies the checksum, payload budget, chamber and vessel mappings, cardiac-cycle
+motion, named flow paths, and approved review metadata. The current candidate and its open
+licence and medical-review decisions are recorded in
+`docs/asset-intake/heart-asset-candidate.md`.
 
 The repository currently includes `skeleton.glb` and `spine.glb` alongside the
 other tracked GLB assets.

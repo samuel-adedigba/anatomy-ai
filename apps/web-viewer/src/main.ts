@@ -2,8 +2,10 @@ import { VisualEngine } from "./VisualEngine";
 import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
 import { ScenePlan } from "./visual-scene/scenePlan.generated";
 import {
+  renderScenePlanFallback,
   renderScenePlanError,
   renderScenePlanSteps,
+  updateScenePlanPlayback,
 } from "./visual-scene/ScenePlanSteps";
 import { validateScenePlan } from "./visual-scene/scenePlanValidator";
 
@@ -56,6 +58,7 @@ if (isEmbedded) {
 
 let activeViewMode: ViewMode =
   (viewSelect?.value as ViewMode | undefined) ?? "full_body";
+let activeScenePlan: ScenePlan | null = null;
 
 // Intercept model events so we can show/hide the loading overlay and notify host
 const engine = new VisualEngine(container, {
@@ -71,6 +74,23 @@ const engine = new VisualEngine(container, {
   onError: (message, viewMode) => {
     if (loadingEl) loadingEl.style.display = "none";
     postToHost({ type: "viewer_error", message, view_mode: viewMode as ViewMode | undefined });
+  },
+  onSceneProgress: (progress) => {
+    if (!activeScenePlan) return;
+    updateScenePlanPlayback(
+      activeScenePlan,
+      progress.time_ms,
+      progress.state,
+      progress.step_id
+    );
+    postToHost({ type: "scene_progress", ...progress });
+  },
+  onSceneComplete: (planId) => {
+    postToHost({ type: "scene_complete", plan_id: planId });
+  },
+  onSceneFallback: (planId, message) => {
+    renderScenePlanFallback(message);
+    postToHost({ type: "scene_fallback", plan_id: planId, message });
   },
 });
 
@@ -126,7 +146,7 @@ window.addEventListener("message", async (event: MessageEvent) => {
         return;
       }
 
-      renderScenePlanSteps(result.plan);
+      showScenePlan(result.plan);
       return;
     }
 
@@ -178,7 +198,7 @@ window.addEventListener("message", async (event: MessageEvent) => {
     return null;
   }
 
-  renderScenePlanSteps(result.plan);
+  showScenePlan(result.plan);
   return result.plan;
 };
 
@@ -237,7 +257,7 @@ async function loadDeterministicCardiovascularFixture(): Promise<void> {
           .join(" ")
       );
     }
-    renderScenePlanSteps(result.plan);
+    showScenePlan(result.plan);
   } catch (error) {
     renderScenePlanError(
       error instanceof Error
@@ -245,4 +265,19 @@ async function loadDeterministicCardiovascularFixture(): Promise<void> {
         : "The deterministic cardiovascular fixture could not be loaded."
     );
   }
+}
+
+function showScenePlan(plan: ScenePlan): void {
+  activeScenePlan = plan;
+  renderScenePlanSteps(plan, {
+    onTogglePlay: () => {
+      const state = engine.getSceneProgress()?.state;
+      if (state === "playing") engine.pauseScene();
+      else engine.playScene();
+    },
+    onReplay: () => engine.replayScene(),
+    onSeek: (timeMs) => engine.seekScene(timeMs),
+    onSpeedChange: (speed) => engine.setSceneSpeed(speed),
+  });
+  void engine.executeScenePlan(plan);
 }

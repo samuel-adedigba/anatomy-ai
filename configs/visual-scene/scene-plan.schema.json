@@ -23,7 +23,7 @@
       "const": "1.0"
     },
     "capability_registry_version": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "plan_id": {
       "type": "string",
@@ -148,7 +148,7 @@
         "properties": {
           "required_assets": {
             "type": "array",
-            "contains": { "const": "circulation.major-vessels.v1" }
+            "contains": { "const": "heart.educational.v1" }
           }
         }
       }
@@ -181,12 +181,6 @@
               {
                 "type": "array",
                 "contains": { "const": "heart.educational.v1" }
-              },
-              {
-                "type": "array",
-                "contains": {
-                  "const": "circulation.major-vessels.v1"
-                }
               }
             ]
           }
@@ -380,6 +374,7 @@
                 "id": { "$ref": "#/$defs/identifier" },
                 "target": {
                   "enum": [
+                    "heart",
                     "circulation.pulmonary",
                     "circulation.systemic"
                   ]
@@ -390,8 +385,10 @@
                 "path": {
                   "enum": [
                     "body_to_right_atrium",
+                    "right_atrium_to_right_ventricle",
                     "right_ventricle_to_lungs",
                     "lungs_to_left_atrium",
+                    "left_atrium_to_left_ventricle",
                     "left_ventricle_to_body"
                   ]
                 },
@@ -412,6 +409,13 @@
                 },
                 {
                   "properties": {
+                    "path": { "const": "right_atrium_to_right_ventricle" },
+                    "target": { "const": "heart" },
+                    "state": { "const": "oxygen_poor_blood" }
+                  }
+                },
+                {
+                  "properties": {
                     "path": { "const": "right_ventricle_to_lungs" },
                     "target": { "const": "circulation.pulmonary" },
                     "state": { "const": "oxygen_poor_blood" }
@@ -421,6 +425,13 @@
                   "properties": {
                     "path": { "const": "lungs_to_left_atrium" },
                     "target": { "const": "circulation.pulmonary" },
+                    "state": { "const": "oxygen_rich_blood" }
+                  }
+                },
+                {
+                  "properties": {
+                    "path": { "const": "left_atrium_to_left_ventricle" },
+                    "target": { "const": "heart" },
                     "state": { "const": "oxygen_rich_blood" }
                   }
                 },

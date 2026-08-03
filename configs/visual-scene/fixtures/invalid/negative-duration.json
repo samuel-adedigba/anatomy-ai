@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "capability_registry_version": "1.0.0",
+  "capability_registry_version": "1.1.0",
   "plan_id": "invalid.negative-duration.v1",
   "topic": "cardiovascular_system",
   "learning_objective": "Contract rejection fixture.",

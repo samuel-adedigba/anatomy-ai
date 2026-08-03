@@ -4,12 +4,17 @@ import { ModelLoader } from "./ModelLoader";
 import { Highlighter } from "./Highlighter";
 import { Animator } from "./Animator";
 import { CameraController } from "./CameraController";
+import { ScenePlanRuntime, ScenePlaybackProgress } from "./runtime/ScenePlanRuntime";
 import { ViewMode, VisualCommand } from "./types";
+import { ScenePlan } from "./visual-scene/scenePlan.generated";
 
 export type VisualEngineCallbacks = {
   onModelLoading?: (viewMode: string) => void;
   onModelLoaded?: (viewMode: string) => void;
   onError?: (message: string, viewMode?: string) => void;
+  onSceneProgress?: (progress: ScenePlaybackProgress) => void;
+  onSceneComplete?: (planId: string) => void;
+  onSceneFallback?: (planId: string, message: string) => void;
 };
 
 /**
@@ -22,6 +27,7 @@ export class VisualEngine {
   private highlighter: Highlighter;
   private animator: Animator;
   private camera: CameraController;
+  private sceneRuntime: ScenePlanRuntime;
   private currentModel: THREE.Group | null = null;
   private currentViewMode: ViewMode | null = null;
   private commandId = 0;
@@ -34,13 +40,27 @@ export class VisualEngine {
     this.highlighter = new Highlighter(this.loader);
     this.animator = new Animator(this.loader);
     this.camera = new CameraController(this.scene.camera, this.scene.controls);
+    this.sceneRuntime = new ScenePlanRuntime(
+      this.scene.scene,
+      this.scene.camera,
+      this.camera,
+      container,
+      {
+        onProgress: (progress) => this.callbacks.onSceneProgress?.(progress),
+        onComplete: (planId) => this.callbacks.onSceneComplete?.(planId),
+        onError: (message) => this.callbacks.onError?.(message),
+      }
+    );
 
     // Wire animator into the scene update loop
     this.scene.addUpdateCallback((delta) => this.animator.update(delta));
+    this.scene.addUpdateCallback((delta) => this.sceneRuntime.update(delta));
+    this.scene.addRenderCallback(() => this.sceneRuntime.renderOverlay());
     this.scene.start();
   }
 
   async executeCommand(command: VisualCommand): Promise<void> {
+    this.sceneRuntime.stop();
     const commandId = ++this.commandId;
     const { view_mode, highlight, animation, camera, opacity, confidence } = command;
     const shouldLoadModel = this.currentModel === null || this.currentViewMode !== view_mode;
@@ -95,6 +115,52 @@ export class VisualEngine {
       camera: "reset",
       confidence: 1.0,
     });
+  }
+
+  async executeScenePlan(plan: ScenePlan): Promise<void> {
+    const commandId = ++this.commandId;
+    this.highlighter.clear();
+    this.animator.stop();
+    if (this.currentModel) this.scene.scene.remove(this.currentModel);
+    this.currentModel = null;
+    this.currentViewMode = null;
+    const started = await this.sceneRuntime.load(plan);
+    if (commandId !== this.commandId) return;
+    if (started) return;
+
+    this.callbacks.onSceneFallback?.(plan.plan_id, plan.fallback.message);
+    await this.executeCommand({
+      focus_region: plan.fallback.view_mode,
+      view_mode: plan.fallback.view_mode,
+      highlight: [],
+      animation: "none",
+      camera: "reset",
+      confidence: 1,
+    });
+  }
+
+  playScene(): void {
+    this.sceneRuntime.play();
+  }
+
+  pauseScene(): void {
+    this.sceneRuntime.pause();
+  }
+
+  replayScene(): void {
+    this.sceneRuntime.replay();
+  }
+
+  seekScene(timeMs: number): void {
+    this.sceneRuntime.seek(timeMs);
+  }
+
+  setSceneSpeed(speed: number): void {
+    this.sceneRuntime.setSpeed(speed);
+  }
+
+  getSceneProgress(): ScenePlaybackProgress | null {
+    return this.sceneRuntime.getProgress();
   }
 
   private _normalizeModel(model: THREE.Group): void {

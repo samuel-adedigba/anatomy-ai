@@ -5,6 +5,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { readGlbJson, uniqueNames } from "./glb.mjs";
 
 const REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -14,8 +15,6 @@ const DEFAULT_MODELS_DIRECTORY = path.join(
   REPOSITORY_ROOT,
   "engines/anatomy-assets/models"
 );
-const GLB_MAGIC = 0x46546c67;
-const JSON_CHUNK_TYPE = 0x4e4f534a;
 const MOBILE_BUDGET_BYTES = 20 * 1024 * 1024;
 const LEDGER_PATH = path.join(
   REPOSITORY_ROOT,
@@ -43,49 +42,6 @@ const REQUIRED_SEMANTIC_NODES = {
   ],
 };
 const args = new Set(process.argv.slice(2));
-
-function readGlbJson(buffer, fileName) {
-  if (buffer.length < 20 || buffer.readUInt32LE(0) !== GLB_MAGIC) {
-    throw new Error(`${fileName} is not a valid binary glTF file`);
-  }
-
-  const version = buffer.readUInt32LE(4);
-  const declaredLength = buffer.readUInt32LE(8);
-  if (version !== 2) {
-    throw new Error(`${fileName} uses unsupported glTF version ${version}`);
-  }
-  if (declaredLength !== buffer.length) {
-    throw new Error(
-      `${fileName} declares ${declaredLength} bytes but contains ${buffer.length}`
-    );
-  }
-
-  let offset = 12;
-  while (offset + 8 <= buffer.length) {
-    const chunkLength = buffer.readUInt32LE(offset);
-    const chunkType = buffer.readUInt32LE(offset + 4);
-    const chunkStart = offset + 8;
-    const chunkEnd = chunkStart + chunkLength;
-    if (chunkEnd > buffer.length) {
-      throw new Error(`${fileName} contains a truncated GLB chunk`);
-    }
-    if (chunkType === JSON_CHUNK_TYPE) {
-      return JSON.parse(
-        buffer
-          .subarray(chunkStart, chunkEnd)
-          .toString("utf8")
-          .replace(/\u0000+$/u, "")
-      );
-    }
-    offset = chunkEnd;
-  }
-
-  throw new Error(`${fileName} does not contain a JSON chunk`);
-}
-
-function uniqueNames(items = []) {
-  return [...new Set(items.map((item) => item?.name).filter(Boolean))].sort();
-}
 
 function inspectDocument(fileName, buffer, document) {
   const meshes = document.meshes ?? [];
