@@ -40,6 +40,8 @@ type AnatomyState = {
   pendingCommand: VisualCommand | null;
   currentScenePlan: ScenePlan | null;
   pendingScenePlan: ScenePlan | null;
+  visualSupport: "reviewed_recipe" | "static_anatomy" | "unsupported_visual" | "unavailable" | null;
+  visualMessage: string | null;
 
   // Viewer
   viewerReady:    boolean;
@@ -83,6 +85,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   pendingCommand: null,
   currentScenePlan: null,
   pendingScenePlan: null,
+  visualSupport: null,
+  visualMessage: null,
 
   viewerReady:   false,
   viewerLoading: false,
@@ -104,6 +108,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
     pendingCommand: null,
     currentScenePlan: null,
     pendingScenePlan: null,
+    visualSupport: null,
+    visualMessage: null,
   }),
 
   setViewerReady: (ready) => {
@@ -149,6 +155,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
       set({
         answer:         data.answer,
         sources:        data.sources ?? [],
+        visualSupport:  data.visualSupport ?? null,
+        visualMessage:  data.visualMessage ?? null,
         currentMode:    data.visualCommand?.view_mode ?? get().currentMode,
         isLoading:      false,
         hasAsked:       true,

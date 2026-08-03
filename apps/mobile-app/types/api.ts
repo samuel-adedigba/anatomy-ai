@@ -32,6 +32,8 @@ export type AskResponseData = {
   sources: SourceRef[];
   visualCommand: VisualCommand;
   scenePlan?: ScenePlan;
+  visualSupport?: "reviewed_recipe" | "static_anatomy" | "unsupported_visual" | "unavailable";
+  visualMessage?: string;
 };
 
 export type AskResponse = GatewaySuccess<AskResponseData>;

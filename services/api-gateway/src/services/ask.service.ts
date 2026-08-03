@@ -1,6 +1,5 @@
 import axios from "axios";
-import { AskRequestBody, AskResponse, InstructionParseResponse } from "../types";
-import { AppError } from "../utils/errors";
+import { AskRequestBody, AskResponse, InstructionParseResponse, SourceRef } from "../types";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8001";
 const INSTRUCTION_ENGINE_URL = process.env.INSTRUCTION_ENGINE_URL ?? "http://localhost:3002";
@@ -18,12 +17,18 @@ export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse
     .post(`${AI_SERVICE_URL}/query`, {
       query: body.query,
       session_id: body.sessionId ?? null,
-    }, {
-      timeout: AI_TIMEOUT_MS,
-    })
-    .catch(() => {
-      throw new AppError("AI service is unavailable", 503);
-    });
+    }, { timeout: AI_TIMEOUT_MS })
+    .catch(() => null);
+
+  if (!aiRes) {
+    return {
+      answer: "The explanation service is temporarily unavailable. Showing a safe static anatomy view instead.",
+      sources: [],
+      visualCommand: buildFallbackCommand(body.query),
+      visualSupport: "unavailable",
+      visualMessage: "The written explanation and reviewed visual sequence are unavailable right now.",
+    };
+  }
 
   const aiData = aiRes.data as {
     answer: string;
@@ -38,8 +43,11 @@ export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse
   // ─── Step 2: Convert answer → visual command ──────────────────
   const instructionRes = await axios
     .post<InstructionParseResponse>(`${INSTRUCTION_ENGINE_URL}/parse`, {
+      question: body.query,
       answer,
       raw_context: raw_context ?? "",
+      evidence_refs: buildEvidenceRefs(sources ?? []),
+      capability_registry_version: "1.1.0",
       ...(ragScenePlan !== undefined ? { scene_plan: ragScenePlan } : {}),
     }, {
       timeout: INSTRUCTION_ENGINE_TIMEOUT_MS,
@@ -56,8 +64,22 @@ export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse
     sources: sources ?? [],
     visualCommand: instructionRes?.data?.command ?? buildFallbackCommand(body.query),
     ...(scenePlan ? { scenePlan } : {}),
+    ...(instructionRes?.data?.visualSupport
+      ? { visualSupport: instructionRes.data.visualSupport }
+      : {}),
+    ...(instructionRes?.data?.visualMessage
+      ? { visualMessage: instructionRes.data.visualMessage }
+      : {}),
   };
 };
+
+const buildEvidenceRefs = (sources: SourceRef[]): string[] => [
+  ...new Set(
+    sources
+      .map((source) => source.url ?? source.title)
+      .filter((reference): reference is string => Boolean(reference))
+  ),
+].slice(0, 24);
 
 const FALLBACK_VIEW_RULES: Array<{
   keywords: string[];

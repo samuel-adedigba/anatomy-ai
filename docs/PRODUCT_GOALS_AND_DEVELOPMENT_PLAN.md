@@ -36,7 +36,7 @@ A phase becomes `complete` only when all of its exit criteria pass.
 | 2 | Heart asset production pipeline | In progress |
 | 3 | Timeline, multi-layer scene, and animation runtime | In progress |
 | 4 | Reviewed cardiovascular vertical slice | In progress |
-| 5 | AI scene planner integration | Not started |
+| 5 | AI scene planner integration | In progress |
 | 6 | Mobile learning experience and optional narration | Not started |
 | 7 | Release hardening | Not started |
 | 8 | Add new processes one at a time | Not started |
@@ -75,6 +75,15 @@ educational simplifications. The local viewer suite now includes a cardiovascula
 fixture covering all four chambers, four valves, six directional flow paths, captions, and
 the static fallback contract. Medical review, accessibility review, user comprehension
 testing, and reference-device performance evidence remain open, so the phase is not complete.
+
+Phase 5 has started with a deterministic scene planner integrated into the instruction engine.
+The gateway now passes the original question, evidence references, and capability-registry
+version. Supported cardiovascular process questions select the reviewed recipe, static heart
+questions use a static view, and unsupported visual requests return an explicit fallback
+message. The planner ignores retrieved text for intent and renderer selection, validates the
+reviewed recipe before returning it, and returns safe output when either dependency is
+unavailable. Golden-question, repeatability, and prompt-injection regression tests are in
+place; live RAG evaluation and the 90% reviewed-intent target remain open.
 
 ## 2. Product vision
 

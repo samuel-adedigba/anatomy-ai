@@ -24,6 +24,7 @@ import { SourceRef } from "../../types/api";
 type Props = {
   answer: string;
   sources: SourceRef[];
+  visualMessage?: string;
   isLoading?: boolean;
   onClear?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -32,6 +33,7 @@ type Props = {
 export const AnswerPanel = ({
   answer,
   sources,
+  visualMessage,
   isLoading = false,
   onClear,
   style,
@@ -112,6 +114,13 @@ export const AnswerPanel = ({
               </View>
               <AnswerContent answer={answer} />
             </View>
+
+            {visualMessage && (
+              <View style={styles.visualNotice} accessibilityRole="alert">
+                <AppIcon name="information-outline" size={18} color={Colors.warning} />
+                <Text style={styles.visualNoticeText}>{visualMessage}</Text>
+              </View>
+            )}
 
             <View style={styles.divider} />
 
@@ -307,6 +316,20 @@ const styles = StyleSheet.create({
     gap:      Spacing.xl,
   },
   answerSection: { gap: Spacing.md },
+  visualNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.warningDim,
+  },
+  visualNoticeText: {
+    flex: 1,
+    color: Colors.textSecond,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+  },
   sectionLabelRow: {
     flexDirection:  "row",
     alignItems:     "center",

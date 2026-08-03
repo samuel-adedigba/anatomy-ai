@@ -6,6 +6,7 @@ import { ParseRequestSchema, DirectCommandSchema } from "./validators/schemas";
 import { compileLegacyCommandToScenePlan } from "./visual-scene/legacyAdapter";
 import { validateAssetManifest } from "./visual-scene/assetManifestSchema";
 import { validateScenePlan } from "./visual-scene/scenePlanSchema";
+import { planQuestion } from "./planner/scenePlanner";
 
 const app = express();
 app.use(express.json({ limit: "512kb" }));
@@ -23,10 +24,17 @@ app.post("/parse", (req: Request, res: Response) => {
     return;
   }
 
-  const { answer, raw_context } = parsed.data;
-  const command = parseAnswerToCommand(answer, raw_context);
+  const { question, answer, raw_context, evidence_refs } = parsed.data;
+  const plannerResult = question
+    ? planQuestion(question, evidence_refs)
+    : undefined;
+  const command = plannerResult?.command ?? parseAnswerToCommand(answer, raw_context);
 
-  const scenePlanResult = parsed.data.scene_plan === undefined
+  const scenePlanResult = plannerResult
+    ? plannerResult.scenePlan
+      ? { success: true as const, plan: plannerResult.scenePlan }
+      : null
+    : parsed.data.scene_plan === undefined
     ? null
     : validateScenePlan(parsed.data.scene_plan);
 
@@ -40,6 +48,8 @@ app.post("/parse", (req: Request, res: Response) => {
     status: true,
     command,
     ...(scenePlanResult?.success ? { scenePlan: scenePlanResult.plan } : {}),
+    ...(plannerResult?.visualSupport ? { visualSupport: plannerResult.visualSupport } : {}),
+    ...(plannerResult?.message ? { visualMessage: plannerResult.message } : {}),
   });
 });
 

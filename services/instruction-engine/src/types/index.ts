@@ -47,8 +47,11 @@ export type VisualCommand = {
 
 // ─── Parse request from gateway ─────────────────────────────────
 export type ParseRequest = {
+  question?: string;
   answer: string;
   raw_context: string;
+  evidence_refs?: string[];
+  capability_registry_version?: string;
 };
 
 // ─── Direct command request (no AI needed) ───────────────────────
@@ -61,4 +64,6 @@ export type DirectCommandRequest = {
 export type CommandResponse = {
   command: VisualCommand;
   scenePlan?: ScenePlan;
+  visualSupport?: "reviewed_recipe" | "static_anatomy" | "unsupported_visual";
+  visualMessage?: string;
 };

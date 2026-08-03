@@ -47,6 +47,7 @@ export default function AnatomyWorkspace() {
   const error = useAnatomyStore((state) => state.error);
   const currentCommand = useAnatomyStore((state) => state.currentCommand);
   const currentScenePlan = useAnatomyStore((state) => state.currentScenePlan);
+  const visualMessage = useAnatomyStore((state) => state.visualMessage);
   const currentMode = useAnatomyStore((state) => state.currentMode);
   const viewerReady = useAnatomyStore((state) => state.viewerReady);
   const serviceHealth = useAnatomyStore((state) => state.serviceHealth);
@@ -168,6 +169,7 @@ export default function AnatomyWorkspace() {
     <AnswerPanel
       answer={answer}
       sources={sources}
+      visualMessage={visualMessage ?? undefined}
       isLoading={isLoading}
       onClear={clearAnswer}
       style={styles.fill}

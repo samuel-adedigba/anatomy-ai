@@ -12,6 +12,8 @@ export type AskResponse = {
   sources: SourceRef[];
   visualCommand: VisualCommand;
   scenePlan?: ScenePlan;
+  visualSupport?: "reviewed_recipe" | "static_anatomy" | "unsupported_visual" | "unavailable";
+  visualMessage?: string;
 };
 
 export type SourceRef = {
@@ -33,6 +35,8 @@ export type VisualCommand = {
 export type InstructionParseResponse = {
   command: VisualCommand;
   scenePlan?: ScenePlan;
+  visualSupport?: "reviewed_recipe" | "static_anatomy" | "unsupported_visual";
+  visualMessage?: string;
 };
 
 export type ApiSuccess<T> = {

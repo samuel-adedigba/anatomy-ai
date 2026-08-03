@@ -133,7 +133,9 @@ Response: {
       "camera": "zoom_in",
       "confidence": 0.85
     },
-    "scenePlan": "optional: present only when RAG selected a validated scene plan"
+    "scenePlan": "optional: present for a supported reviewed visual recipe",
+    "visualSupport": "reviewed_recipe | static_anatomy | unsupported_visual | unavailable",
+    "visualMessage": "optional honest explanation of visual limitations"
   }
 }
 ```

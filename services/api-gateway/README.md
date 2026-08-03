@@ -7,7 +7,7 @@ Node.js / Express / TypeScript — main backend for Anatomy AI.
 - Sanitizes and validates input (prompt injection guard)
 - Forwards to `ai-service` (Python RAG)
 - Forwards AI output to `instruction-engine`
-- Returns unified `{ answer, sources, visualCommand, scenePlan? }` to frontend
+- Returns unified `{ answer, sources, visualCommand, scenePlan?, visualSupport?, visualMessage? }` to frontend
 
 ## Routes
 | Method | Path | Description |
