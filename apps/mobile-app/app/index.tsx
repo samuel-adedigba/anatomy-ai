@@ -46,6 +46,7 @@ export default function AnatomyWorkspace() {
   const isLoading = useAnatomyStore((state) => state.isLoading);
   const error = useAnatomyStore((state) => state.error);
   const currentCommand = useAnatomyStore((state) => state.currentCommand);
+  const currentScenePlan = useAnatomyStore((state) => state.currentScenePlan);
   const currentMode = useAnatomyStore((state) => state.currentMode);
   const viewerReady = useAnatomyStore((state) => state.viewerReady);
   const serviceHealth = useAnatomyStore((state) => state.serviceHealth);
@@ -80,10 +81,12 @@ export default function AnatomyWorkspace() {
   }, []);
 
   useEffect(() => {
-    if (currentCommand && viewerRef.current && viewerReady) {
+    if (viewerReady && viewerRef.current && currentScenePlan) {
+      viewerRef.current.sendScenePlan(currentScenePlan);
+    } else if (currentCommand && viewerRef.current && viewerReady) {
       viewerRef.current.sendCommand(currentCommand);
     }
-  }, [currentCommand, viewerReady]);
+  }, [currentCommand, currentScenePlan, viewerReady]);
 
   const handleSubmit = useCallback(() => {
     Keyboard.dismiss();
@@ -109,8 +112,7 @@ export default function AnatomyWorkspace() {
 
   const handleViewerReady = useCallback(() => {
     setViewerReady(true);
-    viewerRef.current?.sendCamera("reset", currentMode);
-  }, [currentMode, setViewerReady]);
+  }, [setViewerReady]);
 
   const handleModelLoading = useCallback(
     (mode: ViewMode) => {
@@ -129,6 +131,16 @@ export default function AnatomyWorkspace() {
     [setCurrentMode, setViewerLoading]
   );
 
+  const handleSceneLoading = useCallback(() => {
+    setViewerLoading(true);
+    setModelLoadingMode("heart");
+  }, [setViewerLoading]);
+
+  const handleSceneLoaded = useCallback(() => {
+    setViewerLoading(false);
+    setModelLoadingMode(null);
+  }, [setViewerLoading]);
+
   const handleViewerError = useCallback(() => {
     setViewerLoading(false);
     setModelLoadingMode(null);
@@ -144,6 +156,8 @@ export default function AnatomyWorkspace() {
       onReady={handleViewerReady}
       onModelLoading={handleModelLoading}
       onModelLoaded={handleModelLoaded}
+      onSceneLoading={handleSceneLoading}
+      onSceneLoaded={handleSceneLoaded}
       onError={handleViewerError}
       onControl={handleCameraControl}
       style={styles.fill}

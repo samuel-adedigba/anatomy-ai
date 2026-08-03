@@ -30,6 +30,11 @@ export type VisualCommand = {
   confidence: number;
 };
 
+export type InstructionParseResponse = {
+  command: VisualCommand;
+  scenePlan?: ScenePlan;
+};
+
 export type ApiSuccess<T> = {
   status: true;
   message: string;

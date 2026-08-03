@@ -1,6 +1,7 @@
 // ─── Core visual command schema ─────────────────────────────────
 // This is the contract between the instruction engine and the visual engine.
 // Every field here maps to a real Three.js operation.
+import type { ScenePlan } from "../visual-scene/scenePlan.generated";
 
 export type ViewMode =
   | "full_body"
@@ -59,4 +60,5 @@ export type DirectCommandRequest = {
 // ─── Response ────────────────────────────────────────────────────
 export type CommandResponse = {
   command: VisualCommand;
+  scenePlan?: ScenePlan;
 };

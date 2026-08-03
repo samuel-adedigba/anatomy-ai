@@ -51,6 +51,8 @@ beforeEach(() => {
     currentCommand: null,
     currentMode:    "full_body",
     pendingCommand: null,
+    currentScenePlan: null,
+    pendingScenePlan: null,
     viewerReady:    false,
     viewerLoading:  false,
     serviceHealth:  "offline",

@@ -90,9 +90,23 @@ export class CameraController {
     this.frameObject(object);
   }
 
-  orbitAroundTarget(angle: number): void {
-    this._rotateAroundY(angle);
+  orbitAroundTarget(
+    angle: number,
+    progress = 1,
+    startPosition?: THREE.Vector3
+  ): void {
+    const origin = startPosition ?? this.camera.position;
+    const offset = origin.clone().sub(this.target);
+    offset.applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      angle * THREE.MathUtils.clamp(progress, 0, 1)
+    );
+    this.camera.position.copy(this.target).add(offset);
     this._syncControls();
+  }
+
+  getPosition(): THREE.Vector3 {
+    return this.camera.position.clone();
   }
 
   private _setViewDirection(dx: number, dy: number, dz: number): void {

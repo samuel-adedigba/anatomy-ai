@@ -10,11 +10,19 @@ export class SceneManager {
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
   controls: OrbitControls;
-  private animationId: number = 0;
+  private animationId = 0;
   private updateCallbacks: Array<(delta: number) => void> = [];
   private renderCallbacks: Array<() => void> = [];
   private clock = new THREE.Clock();
   private resizeObserver?: ResizeObserver;
+  private readonly resizeHandler: () => void;
+  private readonly visibilityHandler: () => void;
+  private readonly controlsStartHandler: () => void;
+  private readonly controlsEndHandler: () => void;
+  private readonly controlsChangeHandler: () => void;
+  private running = false;
+  private continuousRendering = false;
+  private needsRender = true;
 
   constructor(container: HTMLElement) {
     const { width, height } = this._getViewportSize(container);
@@ -34,7 +42,7 @@ export class SceneManager {
 
     // ─── Renderer ─────────────────────────────────────────────────
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
     this.renderer.domElement.style.touchAction = "none";
@@ -69,12 +77,30 @@ export class SceneManager {
     this.scene.add(fillLight);
 
     // ─── Resize handler ───────────────────────────────────────────
-    window.addEventListener("resize", () => this._onResize(container));
+    this.resizeHandler = () => this._onResize(container);
+    this.visibilityHandler = () => {
+      if (!document.hidden) {
+        this.clock.start();
+        this.requestRender();
+      }
+    };
+    this.controlsStartHandler = () => this.setContinuousRendering(true);
+    this.controlsEndHandler = () => {
+      this.setContinuousRendering(false);
+      this.requestRender();
+    };
+    this.controlsChangeHandler = () => this.requestRender();
+
+    window.addEventListener("resize", this.resizeHandler);
+    document.addEventListener("visibilitychange", this.visibilityHandler);
+    this.controls.addEventListener("start", this.controlsStartHandler);
+    this.controls.addEventListener("end", this.controlsEndHandler);
+    this.controls.addEventListener("change", this.controlsChangeHandler);
     if (typeof ResizeObserver !== "undefined") {
       this.resizeObserver = new ResizeObserver(() => this._onResize(container));
       this.resizeObserver.observe(container);
     }
-    requestAnimationFrame(() => this._onResize(container));
+    this._onResize(container);
   }
 
   /** Register a callback to run every animation frame. */
@@ -88,33 +114,71 @@ export class SceneManager {
   }
 
   start(): void {
-    const loop = () => {
-      this.animationId = requestAnimationFrame(loop);
-      const delta = this.clock.getDelta();
-      this.updateCallbacks.forEach((fn) => fn(delta));
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-      this.renderCallbacks.forEach((fn) => fn());
-    };
-    loop();
+    if (this.running) return;
+    this.running = true;
+    this._scheduleFrame();
+  }
+
+  setContinuousRendering(enabled: boolean): void {
+    this.continuousRendering = enabled;
+    if (enabled) this._scheduleFrame();
+  }
+
+  requestRender(): void {
+    this.needsRender = true;
+    this._scheduleFrame();
   }
 
   stop(): void {
+    this.running = false;
     cancelAnimationFrame(this.animationId);
+    this.animationId = 0;
     this.resizeObserver?.disconnect();
+    window.removeEventListener("resize", this.resizeHandler);
+    document.removeEventListener("visibilitychange", this.visibilityHandler);
+    this.controls.removeEventListener("start", this.controlsStartHandler);
+    this.controls.removeEventListener("end", this.controlsEndHandler);
+    this.controls.removeEventListener("change", this.controlsChangeHandler);
+  }
+
+  private _scheduleFrame(): void {
+    if (
+      !this.running ||
+      document.hidden ||
+      (!this.continuousRendering && !this.needsRender) ||
+      this.animationId !== 0
+    ) {
+      return;
+    }
+
+    this.animationId = requestAnimationFrame(() => {
+      this.animationId = 0;
+      if (!this.running || document.hidden) return;
+      if (!this.continuousRendering && !this.needsRender) return;
+
+      this.needsRender = false;
+      const delta = this.clock.getDelta();
+      this.updateCallbacks.forEach((fn) => fn(delta));
+      const controlsChanged = this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+      this.renderCallbacks.forEach((fn) => fn());
+      if (controlsChanged) this.needsRender = true;
+      this._scheduleFrame();
+    });
   }
 
   private _onResize(container: HTMLElement): void {
     const { width, height } = this._getViewportSize(container);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
+    this.requestRender();
   }
 
   private _getViewportSize(container: HTMLElement): { width: number; height: number } {
     return {
-      width: Math.max(container.clientWidth, window.innerWidth, 1),
-      height: Math.max(container.clientHeight, window.innerHeight, 1),
+      width: Math.max(container.clientWidth, 1),
+      height: Math.max(container.clientHeight, 1),
     };
   }
 }

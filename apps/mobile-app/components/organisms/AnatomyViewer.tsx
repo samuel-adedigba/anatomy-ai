@@ -18,6 +18,7 @@ import { Colors, FontSize, FontWeight, Radius, Spacing } from "../../constants/t
 import { Text } from "../atoms/Text";
 import { AppIcon } from "../atoms/AppIcon";
 import { VisualCommand, ViewMode, ViewerToMobileMessage, CameraAction } from "../../types/viewer";
+import type { ScenePlan } from "../../types/scenePlan.generated";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -32,11 +33,14 @@ type ViewerCallbacks = {
   onReady?:        () => void;
   onModelLoading?: (mode: ViewMode) => void;
   onModelLoaded?:  (mode: ViewMode) => void;
+  onSceneLoading?: () => void;
+  onSceneLoaded?:  () => void;
   onError?:        (msg: string, mode?: ViewMode) => void;
 };
 
 export type AnatomyViewerHandle = {
   sendCommand:  (command: VisualCommand) => void;
+  sendScenePlan: (plan: ScenePlan) => void;
   sendCamera:   (action: CameraAction, currentMode: ViewMode) => void;
   reloadViewer: () => void;
 };
@@ -48,7 +52,7 @@ type Props = ViewerCallbacks & {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
-  ({ onReady, onModelLoading, onModelLoaded, onError, style }, ref) => {
+  ({ onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError, style }, ref) => {
     const webViewRef    = useRef<InstanceType<typeof WebView>>(null);
     const [webViewLoading, setWebViewLoading] = useState(true);
     const [webViewError,   setWebViewError]   = useState<string | null>(null);
@@ -58,6 +62,9 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
     useImperativeHandle(ref, () => ({
       sendCommand: (command: VisualCommand) => {
         webViewRef.current?.postMessage(JSON.stringify(command));
+      },
+      sendScenePlan: (plan: ScenePlan) => {
+        webViewRef.current?.postMessage(JSON.stringify(plan));
       },
       sendCamera: (action: CameraAction, currentMode: ViewMode) => {
         const cmd: VisualCommand = {
@@ -93,6 +100,12 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             case "model_loaded":
               onModelLoaded?.(msg.view_mode);
               break;
+            case "scene_loading":
+              onSceneLoading?.();
+              break;
+            case "scene_loaded":
+              onSceneLoaded?.();
+              break;
             case "viewer_error":
               onError?.(msg.message, msg.view_mode);
               break;
@@ -103,7 +116,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
           // Malformed message — safe to ignore
         }
       },
-      [onReady, onModelLoading, onModelLoaded, onError]
+      [onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError]
     );
 
     if (webViewError) {

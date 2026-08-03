@@ -42,7 +42,7 @@ const validateScenePlanJsonSchema = new Ajv2020({
 
 const cloneFixture = () => structuredClone(cardiovascularFixture);
 
-test("parses a grounded heart answer into a visual command", () => {
+test("keeps heart motion off when only answer prose mentions contraction", () => {
   const command = parseAnswerToCommand(
     "The heart contracts to move blood.",
     "The heart has left and right ventricles."
@@ -50,7 +50,7 @@ test("parses a grounded heart answer into a visual command", () => {
 
   assert.equal(command.focus_region, "heart");
   assert.equal(command.view_mode, "heart");
-  assert.equal(command.animation, "contract");
+  assert.equal(command.animation, "none");
   assert.ok(command.highlight.includes("Heart_Mesh"));
   assert.ok(command.confidence >= 0.4);
 });
@@ -131,7 +131,7 @@ test("rejects incompatible targets, labels, and flow assets", () => {
     (track) => track.id === "right-atrium-label"
   ).text_key = "heart.left_atrium";
   const missingFlowAsset = cloneFixture();
-  missingFlowAsset.required_assets = ["heart.educational.v1"];
+  missingFlowAsset.required_assets = [];
 
   assert.equal(validateScenePlan(clipTargetMismatch).success, false);
   assert.equal(validateScenePlan(labelMismatch).success, false);
@@ -142,7 +142,7 @@ test("rejects incompatible targets, labels, and flow assets", () => {
   assert.equal(validateScenePlanJsonSchema(missingFlowAsset), false);
   assert.ok(
     flowResult.issues.some((issue) =>
-      issue.message.includes("circulation.major-vessels.v1")
+    issue.message.includes("heart.educational.v1")
     )
   );
 });

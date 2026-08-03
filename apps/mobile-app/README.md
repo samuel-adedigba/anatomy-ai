@@ -129,10 +129,11 @@ Response: {
       "focus_region": "heart",
       "view_mode": "heart",
       "highlight": ["Heart_Mesh"],
-      "animation": "pulse",
+      "animation": "none",
       "camera": "zoom_in",
       "confidence": 0.85
-    }
+    },
+    "scenePlan": "optional: present only when RAG selected a validated scene plan"
   }
 }
 ```
@@ -247,7 +248,7 @@ npx expo run:android # builds and opens in Android Studio
 ## Known limitations
 
 - The web viewer must be reachable at `EXPO_PUBLIC_VIEWER_URL`. On a physical device this must be a local IP or deployed URL, not `localhost`.
-- Models `skeleton.glb` and `spine.glb` are missing from the asset set. Switching to those systems shows a placeholder.
+- Models `skeleton.glb` and `spine.glb` are missing from the asset set. Switching to those systems reports a viewer error.
 - The WebView does not perform `event.origin` validation (acceptable for local bridge, review for web deployment).
 - `full_body.glb` (141 MB) causes slow initial load on the "Full Body" system. Optimise the asset before production.
 - The app requires React Native 0.74 and Expo 51. Check Expo compatibility before upgrading.

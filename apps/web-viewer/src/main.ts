@@ -1,4 +1,4 @@
-import { VisualEngine } from "./VisualEngine";
+import type { VisualEngine } from "./VisualEngine";
 import { VisualCommand, ViewMode, ViewerToMobileMessage } from "./types";
 import { ScenePlan } from "./visual-scene/scenePlan.generated";
 import {
@@ -59,46 +59,77 @@ if (isEmbedded) {
 let activeViewMode: ViewMode =
   (viewSelect?.value as ViewMode | undefined) ?? "full_body";
 let activeScenePlan: ScenePlan | null = null;
+let engine: VisualEngine | null = null;
+let enginePromise: Promise<VisualEngine> | null = null;
 
-// Intercept model events so we can show/hide the loading overlay and notify host
-const engine = new VisualEngine(container, {
-  onModelLoading: (viewMode) => {
-    if (loadingEl) loadingEl.style.display = "flex";
-    if (loadingLabel) loadingLabel.textContent = `Loading ${viewMode.replace(/_/g, " ")}…`;
-    postToHost({ type: "model_loading", view_mode: viewMode as ViewMode });
-  },
-  onModelLoaded: (viewMode) => {
-    if (loadingEl) loadingEl.style.display = "none";
-    postToHost({ type: "model_loaded", view_mode: viewMode as ViewMode });
-  },
-  onError: (message, viewMode) => {
-    if (loadingEl) loadingEl.style.display = "none";
-    postToHost({ type: "viewer_error", message, view_mode: viewMode as ViewMode | undefined });
-  },
-  onSceneProgress: (progress) => {
-    if (!activeScenePlan) return;
-    updateScenePlanPlayback(
-      activeScenePlan,
-      progress.time_ms,
-      progress.state,
-      progress.step_id
-    );
-    postToHost({ type: "scene_progress", ...progress });
-  },
-  onSceneComplete: (planId) => {
-    postToHost({ type: "scene_complete", plan_id: planId });
-  },
-  onSceneFallback: (planId, message) => {
-    renderScenePlanFallback(message);
-    postToHost({ type: "scene_fallback", plan_id: planId, message });
-  },
-});
+// Three.js is loaded only when a user command or an explicit scene plan
+// arrives. The initial embedded viewer therefore stays inert and lightweight.
+function getEngine(): Promise<VisualEngine> {
+  if (engine) return Promise.resolve(engine);
+  if (!enginePromise) {
+    enginePromise = import("./VisualEngine").then(({ VisualEngine: Engine }) => {
+      engine = new Engine(container, {
+        onModelLoading: (viewMode) => {
+          if (loadingEl) loadingEl.style.display = "flex";
+          if (loadingLabel) loadingLabel.textContent = `Loading ${viewMode.replace(/_/g, " ")}…`;
+          postToHost({ type: "model_loading", view_mode: viewMode as ViewMode });
+        },
+        onModelLoaded: (viewMode) => {
+          if (loadingEl) loadingEl.style.display = "none";
+          postToHost({ type: "model_loaded", view_mode: viewMode as ViewMode });
+        },
+        onSceneLoading: (planId) => {
+          if (loadingEl) loadingEl.style.display = "flex";
+          if (loadingLabel) loadingLabel.textContent = "Loading visual sequence…";
+          postToHost({ type: "scene_loading", plan_id: planId });
+        },
+        onSceneLoaded: (planId) => {
+          if (loadingEl) loadingEl.style.display = "none";
+          postToHost({ type: "scene_loaded", plan_id: planId });
+        },
+        onError: (message, viewMode) => {
+          if (loadingEl) loadingEl.style.display = "none";
+          postToHost({ type: "viewer_error", message, view_mode: viewMode as ViewMode | undefined });
+        },
+        onSceneProgress: (progress) => {
+          if (!activeScenePlan) return;
+          updateScenePlanPlayback(
+            activeScenePlan,
+            progress.time_ms,
+            progress.state,
+            progress.step_id
+          );
+          postToHost({ type: "scene_progress", ...progress });
+        },
+        onSceneComplete: (planId) => {
+          postToHost({ type: "scene_complete", plan_id: planId });
+        },
+        onSceneFallback: (planId, message) => {
+          renderScenePlanFallback(message);
+          postToHost({ type: "scene_fallback", plan_id: planId, message });
+        },
+      });
+      return engine!;
+    });
+  }
+  return enginePromise;
+}
+
+async function executeCommand(command: VisualCommand): Promise<void> {
+  const visualEngine = await getEngine();
+  await visualEngine.executeCommand(command);
+}
+
+async function executeScenePlan(plan: ScenePlan): Promise<void> {
+  const visualEngine = await getEngine();
+  await visualEngine.executeScenePlan(plan);
+}
 
 // ─── View mode selector (browser dev UI) ────────────────────────────────────
 
 const runCommand = (viewMode: ViewMode) => {
   activeViewMode = viewMode;
-  engine.executeCommand({
+  void executeCommand({
     focus_region: "full_body",
     view_mode: viewMode,
     highlight: [],
@@ -114,15 +145,8 @@ if (viewSelect) {
   });
 }
 
-if (!isEmbedded && viewSelect) {
-  runCommand(viewSelect.value as ViewMode);
-} else if (!isEmbedded) {
-  engine.reset();
-}
-
-if (!isEmbedded) {
-  loadDeterministicCardiovascularFixture();
-}
+// Keep the initial viewer inert. Models and scene plans are loaded only after
+// a user selection or an explicit host/RAG command.
 
 // ─── WebView message bridge ──────────────────────────────────────────────────
 // Receives VisualCommand JSON from React Native via postMessage.
@@ -156,7 +180,7 @@ window.addEventListener("message", async (event: MessageEvent) => {
     }
 
     const command = preserveViewModeForCameraCommand(parsed, activeViewMode);
-    await engine.executeCommand(command);
+    await executeCommand(command);
     activeViewMode = command.view_mode;
 
     if (viewSelect && viewSelect.value !== activeViewMode) {
@@ -180,7 +204,7 @@ window.addEventListener("message", async (event: MessageEvent) => {
     return;
   }
   const next = preserveViewModeForCameraCommand(command, activeViewMode);
-  await engine.executeCommand(next);
+  await executeCommand(next);
   activeViewMode = next.view_mode;
   if (viewSelect && viewSelect.value !== activeViewMode) {
     viewSelect.value = activeViewMode;
@@ -204,7 +228,7 @@ window.addEventListener("message", async (event: MessageEvent) => {
 
 // Notify host that the viewer is ready
 postToHost({ type: "viewer_ready" });
-console.log("[web-viewer] Visual engine ready — postMessage bridge active");
+console.log("[web-viewer] Viewer bridge ready — Three.js engine is lazy-loaded");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -240,44 +264,19 @@ function isTrustedHostMessage(event: MessageEvent): boolean {
   return window.parent !== window && event.source === window.parent;
 }
 
-async function loadDeterministicCardiovascularFixture(): Promise<void> {
-  try {
-    const response = await fetch(
-      "/visual-scene/fixtures/cardiovascular.normal-circulation.v1.json"
-    );
-    if (!response.ok) {
-      throw new Error(`Fixture request failed with status ${response.status}.`);
-    }
-
-    const result = validateScenePlan(await response.json());
-    if (!result.success) {
-      throw new Error(
-        result.issues
-          .map((issue) => `${issue.path}: ${issue.message}`)
-          .join(" ")
-      );
-    }
-    showScenePlan(result.plan);
-  } catch (error) {
-    renderScenePlanError(
-      error instanceof Error
-        ? error.message
-        : "The deterministic cardiovascular fixture could not be loaded."
-    );
-  }
-}
-
 function showScenePlan(plan: ScenePlan): void {
   activeScenePlan = plan;
+  activeViewMode = plan.fallback.view_mode as ViewMode;
+  if (viewSelect) viewSelect.value = activeViewMode;
   renderScenePlanSteps(plan, {
     onTogglePlay: () => {
-      const state = engine.getSceneProgress()?.state;
-      if (state === "playing") engine.pauseScene();
-      else engine.playScene();
+      const state = engine?.getSceneProgress()?.state;
+      if (state === "playing") engine?.pauseScene();
+      else engine?.playScene();
     },
-    onReplay: () => engine.replayScene(),
-    onSeek: (timeMs) => engine.seekScene(timeMs),
-    onSpeedChange: (speed) => engine.setSceneSpeed(speed),
+    onReplay: () => engine?.replayScene(),
+    onSeek: (timeMs) => engine?.seekScene(timeMs),
+    onSpeedChange: (speed) => engine?.setSceneSpeed(speed),
   });
-  void engine.executeScenePlan(plan);
+  void executeScenePlan(plan);
 }

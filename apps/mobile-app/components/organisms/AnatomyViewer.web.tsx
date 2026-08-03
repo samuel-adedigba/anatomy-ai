@@ -22,6 +22,7 @@ import {
   ViewMode,
   VisualCommand,
 } from "../../types/viewer";
+import type { ScenePlan } from "../../types/scenePlan.generated";
 import { AppIcon } from "../atoms/AppIcon";
 import { Text } from "../atoms/Text";
 
@@ -34,11 +35,14 @@ type ViewerCallbacks = {
   onReady?: () => void;
   onModelLoading?: (mode: ViewMode) => void;
   onModelLoaded?: (mode: ViewMode) => void;
+  onSceneLoading?: () => void;
+  onSceneLoaded?: () => void;
   onError?: (message: string, mode?: ViewMode) => void;
 };
 
 export type AnatomyViewerHandle = {
   sendCommand: (command: VisualCommand) => void;
+  sendScenePlan: (plan: ScenePlan) => void;
   sendCamera: (action: CameraAction, currentMode: ViewMode) => void;
   reloadViewer: () => void;
 };
@@ -48,7 +52,7 @@ type Props = ViewerCallbacks & {
 };
 
 export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
-  ({ onReady, onModelLoading, onModelLoaded, onError, style }, ref) => {
+  ({ onReady, onModelLoading, onModelLoaded, onSceneLoading, onSceneLoaded, onError, style }, ref) => {
     const frameRef = useRef<HTMLIFrameElement>(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [frameLoading, setFrameLoading] = useState(true);
@@ -68,6 +72,11 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
 
     useImperativeHandle(ref, () => ({
       sendCommand: postCommand,
+      sendScenePlan: (plan: ScenePlan) => {
+        const frameWindow = frameRef.current?.contentWindow;
+        if (!frameWindow) return;
+        frameWindow.postMessage(JSON.stringify(plan), new URL(VIEWER_URL).origin);
+      },
       sendCamera: (action: CameraAction, currentMode: ViewMode) => {
         postCommand({
           focus_region: currentMode,
@@ -106,6 +115,12 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
             case "model_loaded":
               onModelLoaded?.(msg.view_mode);
               break;
+            case "scene_loading":
+              onSceneLoading?.();
+              break;
+            case "scene_loaded":
+              onSceneLoaded?.();
+              break;
             case "viewer_error":
               onError?.(msg.message, msg.view_mode);
               break;
@@ -119,7 +134,7 @@ export const AnatomyViewer = forwardRef<AnatomyViewerHandle, Props>(
 
       window.addEventListener("message", handleMessage);
       return () => window.removeEventListener("message", handleMessage);
-    }, [onError, onModelLoaded, onModelLoading, onReady]);
+    }, [onError, onModelLoaded, onModelLoading, onReady, onSceneLoaded, onSceneLoading]);
 
     if (frameError) {
       return (

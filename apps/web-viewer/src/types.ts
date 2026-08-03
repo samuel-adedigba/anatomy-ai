@@ -52,6 +52,8 @@ export type ViewerToMobileMessage =
   | { type: "viewer_ready" }
   | { type: "model_loading"; view_mode: ViewMode }
   | { type: "model_loaded"; view_mode: ViewMode }
+  | { type: "scene_loading"; plan_id: string }
+  | { type: "scene_loaded"; plan_id: string }
   | { type: "viewer_error"; message: string; view_mode?: ViewMode }
   | { type: "command_complete"; view_mode: ViewMode }
   | {

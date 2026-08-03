@@ -26,7 +26,21 @@ app.post("/parse", (req: Request, res: Response) => {
   const { answer, raw_context } = parsed.data;
   const command = parseAnswerToCommand(answer, raw_context);
 
-  res.json({ status: true, command });
+  const scenePlanResult = parsed.data.scene_plan === undefined
+    ? null
+    : validateScenePlan(parsed.data.scene_plan);
+
+  // An invalid RAG plan is never executed. The legacy command remains a safe
+  // static fallback, and heart motion is disabled by parseAnswerToCommand.
+  if (scenePlanResult && !scenePlanResult.success) {
+    console.warn("[instruction-engine] Ignoring invalid RAG scene plan", scenePlanResult.issues);
+  }
+
+  res.json({
+    status: true,
+    command,
+    ...(scenePlanResult?.success ? { scenePlan: scenePlanResult.plan } : {}),
+  });
 });
 
 // ─── Direct: region/mode tap → visual command ─────────────────

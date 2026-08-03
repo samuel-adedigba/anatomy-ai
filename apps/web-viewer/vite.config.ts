@@ -134,13 +134,27 @@ function anatomyModels(): Plugin {
  * optional raw OBJ symlinks whose source archives are intentionally untracked;
  * treating the whole workspace as Vite's publicDir makes clean builds fail.
  */
+const isSsrBuild = process.argv.includes("--ssr");
+
 export default defineConfig({
   publicDir: false,
   plugins: [anatomyModels()],
   build: {
     outDir:      "dist",
     emptyOutDir: true,
+    chunkSizeWarningLimit: 600,
     sourcemap:   true,
+    ...(isSsrBuild
+      ? {}
+      : {
+          rollupOptions: {
+            output: {
+              manualChunks: {
+                three: ["three"],
+              },
+            },
+          },
+        }),
   },
   server: {
     port: 5173,

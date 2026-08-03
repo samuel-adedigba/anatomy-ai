@@ -11,6 +11,8 @@ import { ScenePlan } from "./visual-scene/scenePlan.generated";
 export type VisualEngineCallbacks = {
   onModelLoading?: (viewMode: string) => void;
   onModelLoaded?: (viewMode: string) => void;
+  onSceneLoading?: (planId: string) => void;
+  onSceneLoaded?: (planId: string) => void;
   onError?: (message: string, viewMode?: string) => void;
   onSceneProgress?: (progress: ScenePlaybackProgress) => void;
   onSceneComplete?: (planId: string) => void;
@@ -47,7 +49,10 @@ export class VisualEngine {
       container,
       {
         onProgress: (progress) => this.callbacks.onSceneProgress?.(progress),
-        onComplete: (planId) => this.callbacks.onSceneComplete?.(planId),
+        onComplete: (planId) => {
+          this.scene.setContinuousRendering(false);
+          this.callbacks.onSceneComplete?.(planId);
+        },
         onError: (message) => this.callbacks.onError?.(message),
       }
     );
@@ -61,6 +66,7 @@ export class VisualEngine {
 
   async executeCommand(command: VisualCommand): Promise<void> {
     this.sceneRuntime.stop();
+    this.scene.setContinuousRendering(false);
     const commandId = ++this.commandId;
     const { view_mode, highlight, animation, camera, opacity, confidence } = command;
     const shouldLoadModel = this.currentModel === null || this.currentViewMode !== view_mode;
@@ -98,12 +104,15 @@ export class VisualEngine {
     // ─── Animation ───────────────────────────────────────────────────────────
     if (confidence >= 0.4 && animation !== "none") {
       this.animator.set(animation, highlight);
+      this.scene.setContinuousRendering(true);
     } else {
       this.animator.stop();
+      this.scene.setContinuousRendering(false);
     }
 
     // ─── Camera ──────────────────────────────────────────────────────────────
     this.camera.execute(camera);
+    this.scene.requestRender();
   }
 
   async reset(): Promise<void> {
@@ -119,6 +128,7 @@ export class VisualEngine {
 
   async executeScenePlan(plan: ScenePlan): Promise<void> {
     const commandId = ++this.commandId;
+    this.callbacks.onSceneLoading?.(plan.plan_id);
     this.highlighter.clear();
     this.animator.stop();
     if (this.currentModel) this.scene.scene.remove(this.currentModel);
@@ -126,7 +136,11 @@ export class VisualEngine {
     this.currentViewMode = null;
     const started = await this.sceneRuntime.load(plan);
     if (commandId !== this.commandId) return;
-    if (started) return;
+    if (started) {
+      this.scene.setContinuousRendering(true);
+      this.callbacks.onSceneLoaded?.(plan.plan_id);
+      return;
+    }
 
     this.callbacks.onSceneFallback?.(plan.plan_id, plan.fallback.message);
     await this.executeCommand({
@@ -141,18 +155,23 @@ export class VisualEngine {
 
   playScene(): void {
     this.sceneRuntime.play();
+    this.scene.setContinuousRendering(true);
   }
 
   pauseScene(): void {
     this.sceneRuntime.pause();
+    this.scene.setContinuousRendering(false);
+    this.scene.requestRender();
   }
 
   replayScene(): void {
     this.sceneRuntime.replay();
+    this.scene.setContinuousRendering(true);
   }
 
   seekScene(timeMs: number): void {
     this.sceneRuntime.seek(timeMs);
+    this.scene.requestRender();
   }
 
   setSceneSpeed(speed: number): void {
@@ -161,6 +180,15 @@ export class VisualEngine {
 
   getSceneProgress(): ScenePlaybackProgress | null {
     return this.sceneRuntime.getProgress();
+  }
+
+  dispose(): void {
+    this.sceneRuntime.dispose();
+    this.animator.stop();
+    this.highlighter.clear();
+    this.scene.stop();
+    this.scene.renderer.dispose();
+    this.scene.controls.dispose();
   }
 
   private _normalizeModel(model: THREE.Group): void {

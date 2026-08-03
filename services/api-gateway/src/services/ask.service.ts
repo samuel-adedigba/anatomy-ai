@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AskRequestBody, AskResponse } from "../types";
+import { AskRequestBody, AskResponse, InstructionParseResponse } from "../types";
 import { AppError } from "../utils/errors";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://localhost:8001";
@@ -10,7 +10,7 @@ const INSTRUCTION_ENGINE_TIMEOUT_MS = 10_000;
 /**
  * 1. Sends query to the Python AI service (RAG + LLM)
  * 2. Passes the raw AI response to the instruction engine for visual command extraction
- * 3. Returns unified response: answer + sources + visual command
+ * 3. Returns the command plus a validated scene plan when RAG selected one
  */
 export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse> => {
   // ─── Step 1: RAG + answer generation ──────────────────────────
@@ -25,13 +25,22 @@ export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse
       throw new AppError("AI service is unavailable", 503);
     });
 
-  const { answer, sources, raw_context } = aiRes.data;
+  const aiData = aiRes.data as {
+    answer: string;
+    sources?: AskResponse["sources"];
+    raw_context?: string;
+    scene_plan?: unknown;
+    scenePlan?: unknown;
+  };
+  const { answer, sources, raw_context } = aiData;
+  const ragScenePlan = aiData.scene_plan ?? aiData.scenePlan;
 
   // ─── Step 2: Convert answer → visual command ──────────────────
   const instructionRes = await axios
-    .post(`${INSTRUCTION_ENGINE_URL}/parse`, {
+    .post<InstructionParseResponse>(`${INSTRUCTION_ENGINE_URL}/parse`, {
       answer,
-      raw_context,
+      raw_context: raw_context ?? "",
+      ...(ragScenePlan !== undefined ? { scene_plan: ragScenePlan } : {}),
     }, {
       timeout: INSTRUCTION_ENGINE_TIMEOUT_MS,
     })
@@ -40,10 +49,13 @@ export const processAskQuery = async (body: AskRequestBody): Promise<AskResponse
       return null;
     });
 
+  const scenePlan = instructionRes?.data?.scenePlan;
+
   return {
     answer,
     sources: sources ?? [],
     visualCommand: instructionRes?.data?.command ?? buildFallbackCommand(body.query),
+    ...(scenePlan ? { scenePlan } : {}),
   };
 };
 

@@ -58,9 +58,13 @@ export class ScenePlanRuntime {
   private mixers = new Map<SceneLayer, THREE.AnimationMixer>();
   private clipActions = new Map<string, THREE.AnimationAction>();
   private materialSnapshots = new Map<THREE.Mesh, RuntimeMaterialSnapshot>();
+  private morphSnapshots = new Map<THREE.Mesh, Map<number, number>>();
   private activeCameraTrackId: string | null = null;
+  private cameraOrbitStartPosition: THREE.Vector3 | null = null;
   private reducedMotion = false;
   private loadSequence = 0;
+  private lastProgressEmitTime = -Infinity;
+  private lastProgressState: TimelineState | null = null;
 
   constructor(
     scene: THREE.Scene,
@@ -78,7 +82,7 @@ export class ScenePlanRuntime {
     this.particles.setReducedMotion(this.reducedMotion);
     this.timeline = new TimelinePlayer({
       onTime: (timeMs) => this.renderAt(timeMs),
-      onStateChange: () => this.emitProgress(),
+      onStateChange: () => this.emitProgress(undefined, true),
       onComplete: () => {
         if (this.plan) this.callbacks.onComplete?.(this.plan.plan_id);
       },
@@ -144,6 +148,7 @@ export class ScenePlanRuntime {
 
   seek(timeMs: number): void {
     this.timeline.seek(timeMs);
+    this.emitProgress(this.timeline.getTimeMs(), true);
   }
 
   setSpeed(speed: number): void {
@@ -159,6 +164,7 @@ export class ScenePlanRuntime {
     this.loadSequence += 1;
     this.timeline?.pause();
     this.restoreMaterials();
+    this.restoreMorphs();
     this.particles.clear();
     this.labels.clear();
     this.clipActions.forEach((action) => {
@@ -169,7 +175,15 @@ export class ScenePlanRuntime {
     this.mixers.clear();
     this.layers.clear();
     this.activeCameraTrackId = null;
+    this.cameraOrbitStartPosition = null;
+    this.lastProgressEmitTime = -Infinity;
+    this.lastProgressState = null;
     this.plan = null;
+  }
+
+  dispose(): void {
+    this.stop();
+    this.labels.dispose();
   }
 
   private renderAt(timeMs: number): void {
@@ -183,7 +197,7 @@ export class ScenePlanRuntime {
     this.applyMaterials(activeTracks);
     this.applyLabels(activeTracks);
     this.applyFlows(activeTracks, timeMs);
-    this.applyCamera(activeTracks);
+    this.applyCamera(activeTracks, timeMs);
     this.emitProgress(timeMs);
   }
 
@@ -221,6 +235,7 @@ export class ScenePlanRuntime {
   }
 
   private applyMorphs(activeTracks: SceneTrack[], timeMs: number): void {
+    this.restoreMorphs();
     activeTracks.forEach((track) => {
       if (track.action !== "play_morph") return;
       const resolved = this.layers.resolveMorph(track.target, track.morph);
@@ -233,6 +248,11 @@ export class ScenePlanRuntime {
       resolved.meshes.forEach((mesh) => {
         const index = mesh.morphTargetDictionary?.[resolved.morphName];
         if (index !== undefined && mesh.morphTargetInfluences) {
+          const snapshots = this.morphSnapshots.get(mesh) ?? new Map<number, number>();
+          if (!snapshots.has(index)) {
+            snapshots.set(index, mesh.morphTargetInfluences[index] ?? 0);
+            this.morphSnapshots.set(mesh, snapshots);
+          }
           mesh.morphTargetInfluences[index] = this.reducedMotion ? track.from : value;
         }
       });
@@ -296,19 +316,31 @@ export class ScenePlanRuntime {
     errors.forEach((error) => this.callbacks.onError?.(error));
   }
 
-  private applyCamera(activeTracks: SceneTrack[]): void {
+  private applyCamera(activeTracks: SceneTrack[], timeMs: number): void {
     const track = activeTracks.find(
       (candidate) => candidate.action === "camera_focus" || candidate.action === "camera_orbit"
     );
     if (!track) {
       this.activeCameraTrackId = null;
+      this.cameraOrbitStartPosition = null;
       return;
     }
     const resolved = this.layers.resolveTarget(track.target);
-    if (!resolved || this.activeCameraTrackId === track.id) return;
-    this.activeCameraTrackId = track.id;
-    this.camera.focusObject(resolved.object);
-    if (track.action === "camera_orbit") this.camera.orbitAroundTarget(Math.PI / 4);
+    if (!resolved) return;
+    if (this.activeCameraTrackId !== track.id) {
+      this.activeCameraTrackId = track.id;
+      this.camera.focusObject(resolved.object);
+      this.cameraOrbitStartPosition = this.camera.getPosition();
+    }
+    if (track.action === "camera_orbit") {
+      this.camera.orbitAroundTarget(
+        Math.PI / 4,
+        this.reducedMotion
+          ? 1
+          : (timeMs - track.start_ms) / track.duration_ms,
+        this.cameraOrbitStartPosition ?? undefined
+      );
+    }
   }
 
   private preflight(tracks: SceneTrack[]): string[] {
@@ -359,6 +391,16 @@ export class ScenePlanRuntime {
     this.materialSnapshots.clear();
   }
 
+  private restoreMorphs(): void {
+    this.morphSnapshots.forEach((indices, mesh) => {
+      if (!mesh.morphTargetInfluences) return;
+      indices.forEach((value, index) => {
+        mesh.morphTargetInfluences![index] = value;
+      });
+    });
+    this.morphSnapshots.clear();
+  }
+
   private restoreMaterialAssignments(): void {
     this.materialSnapshots.forEach((snapshot, mesh) => {
       mesh.material = snapshot.original;
@@ -397,8 +439,18 @@ export class ScenePlanRuntime {
     });
   }
 
-  private emitProgress(timeMs = this.timeline.getTimeMs()): void {
+  private emitProgress(timeMs = this.timeline.getTimeMs(), force = false): void {
     if (!this.plan) return;
+    const state = this.timeline.getState();
+    if (
+      !force &&
+      state === this.lastProgressState &&
+      Math.abs(timeMs - this.lastProgressEmitTime) < 100
+    ) {
+      return;
+    }
+    this.lastProgressEmitTime = timeMs;
+    this.lastProgressState = state;
     this.callbacks.onProgress?.(this.createProgress(timeMs));
   }
 

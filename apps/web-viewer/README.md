@@ -33,7 +33,7 @@ models/heart.glb
 models/spine.glb
 ```
 
-**Missing models:** If a model file is missing, the viewer falls back to a placeholder silhouette. No crash occurs, but the `viewer_error` message is posted to the host.
+**Missing models:** If a model file is missing, the viewer rejects the load and posts a `viewer_error` message to the host. It never reports a failed asset as successfully loaded.
 
 **Standalone development (outside monorepo):**
 

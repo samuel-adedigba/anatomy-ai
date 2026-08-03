@@ -3,6 +3,9 @@ import { z } from "zod";
 export const ParseRequestSchema = z.object({
   answer: z.string().min(1, "answer is required").max(4000),
   raw_context: z.string().max(8000).default(""),
+  // The RAG service may explicitly select a structured scene plan. Keep this
+  // unknown at the transport boundary and validate it with ScenePlanSchema.
+  scene_plan: z.unknown().optional(),
 });
 
 export const DirectCommandSchema = z.object({

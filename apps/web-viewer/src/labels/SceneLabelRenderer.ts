@@ -13,6 +13,7 @@ export class SceneLabelRenderer {
   private scene: THREE.Scene;
   private camera: THREE.Camera;
   private labels = new Map<string, CSS2DObject>();
+  private resizeObserver?: ResizeObserver;
 
   constructor(scene: THREE.Scene, camera: THREE.Camera, container: HTMLElement) {
     this.scene = scene;
@@ -27,8 +28,8 @@ export class SceneLabelRenderer {
     const resize = () => this.renderer.setSize(container.clientWidth, container.clientHeight);
     resize();
     if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(resize);
-      observer.observe(container);
+      this.resizeObserver = new ResizeObserver(resize);
+      this.resizeObserver.observe(container);
     }
   }
 
@@ -65,5 +66,11 @@ export class SceneLabelRenderer {
 
   clear(): void {
     this.setLabels([]);
+  }
+
+  dispose(): void {
+    this.resizeObserver?.disconnect();
+    this.clear();
+    this.renderer.domElement.remove();
   }
 }

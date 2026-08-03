@@ -66,12 +66,16 @@ export const parseAnswerToCommand = (
     ? (REGION_TO_MESHES[matchedRegion] ?? [])
     : [];
 
-  // ─── Detect animation ──────────────────────────────────────────
+  // ─── Detect legacy animation ───────────────────────────────────
+  // Heart motion is controlled only by an explicitly validated scene plan.
+  // Answer prose and retrieved context are evidence, not playback commands.
   let animation: AnimationType = "none";
-  for (const word of words) {
-    if (ANIMATION_KEYWORDS[word]) {
-      animation = ANIMATION_KEYWORDS[word];
-      break;
+  if (matchedViewMode !== "heart") {
+    for (const word of words) {
+      if (ANIMATION_KEYWORDS[word]) {
+        animation = ANIMATION_KEYWORDS[word];
+        break;
+      }
     }
   }
 

@@ -14,6 +14,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SourceRef, ApiError, HealthStatus } from "../types/api";
+import type { ScenePlan } from "../types/scenePlan.generated";
 import { VisualCommand, ViewMode } from "../types/viewer";
 import { askQuestion, getVisualCommand, checkHealth, isApiError } from "../services/apiClient";
 
@@ -37,6 +38,8 @@ type AnatomyState = {
   currentCommand: VisualCommand | null;
   currentMode:    ViewMode;
   pendingCommand: VisualCommand | null;
+  currentScenePlan: ScenePlan | null;
+  pendingScenePlan: ScenePlan | null;
 
   // Viewer
   viewerReady:    boolean;
@@ -78,6 +81,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   currentCommand: null,
   currentMode:    "full_body",
   pendingCommand: null,
+  currentScenePlan: null,
+  pendingScenePlan: null,
 
   viewerReady:   false,
   viewerLoading: false,
@@ -90,13 +95,31 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
   // ── Setters ─────────────────────────────────────────────────────────────────
   setQuery: (q) => set({ query: q, error: null }),
 
-  clearAnswer: () => set({ answer: "", sources: [], hasAsked: false, error: null }),
+  clearAnswer: () => set({
+    answer: "",
+    sources: [],
+    hasAsked: false,
+    error: null,
+    currentCommand: null,
+    pendingCommand: null,
+    currentScenePlan: null,
+    pendingScenePlan: null,
+  }),
 
   setViewerReady: (ready) => {
     set({ viewerReady: ready });
     if (ready) {
-      const { pendingCommand } = get();
-      if (pendingCommand) set({ currentCommand: pendingCommand, pendingCommand: null });
+      const { pendingCommand, pendingScenePlan } = get();
+      if (pendingScenePlan) {
+        set({
+          currentCommand: null,
+          pendingCommand: null,
+          currentScenePlan: pendingScenePlan,
+          pendingScenePlan: null,
+        });
+      } else if (pendingCommand) {
+        set({ currentCommand: pendingCommand, pendingCommand: null });
+      }
     }
   },
 
@@ -122,6 +145,7 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
       if (currentRequestId !== requestId) return;
 
       const { viewerReady } = get();
+      const scenePlan = data.scenePlan ?? null;
       set({
         answer:         data.answer,
         sources:        data.sources ?? [],
@@ -130,8 +154,18 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
         hasAsked:       true,
         error:          null,
         ...(viewerReady
-          ? { currentCommand: data.visualCommand, pendingCommand: null }
-          : { pendingCommand: data.visualCommand }),
+          ? {
+              currentCommand: scenePlan ? null : data.visualCommand,
+              pendingCommand: null,
+              currentScenePlan: scenePlan,
+              pendingScenePlan: null,
+            }
+          : {
+              currentCommand: null,
+              pendingCommand: scenePlan ? null : data.visualCommand,
+              currentScenePlan: null,
+              pendingScenePlan: scenePlan,
+            }),
       });
     } catch (err) {
       if (currentRequestId !== requestId) return;
@@ -166,6 +200,8 @@ export const useAnatomyStore = create<AnatomyState>((set, get) => ({
       set({
         currentMode:    mode,
         isLoading:      false,
+        currentScenePlan: null,
+        pendingScenePlan: null,
         ...(viewerReady
           ? { currentCommand: command, pendingCommand: null }
           : { pendingCommand: command }),

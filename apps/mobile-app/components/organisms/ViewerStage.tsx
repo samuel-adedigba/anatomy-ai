@@ -30,6 +30,8 @@ type Props = {
   onReady: () => void;
   onModelLoading: (mode: ViewMode) => void;
   onModelLoaded: (mode: ViewMode) => void;
+  onSceneLoading: () => void;
+  onSceneLoaded: () => void;
   onError: (message: string, mode?: ViewMode) => void;
   onControl: (action: CameraAction) => void;
   style?: StyleProp<ViewStyle>;
@@ -45,6 +47,8 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
       onReady,
       onModelLoading,
       onModelLoaded,
+      onSceneLoading,
+      onSceneLoaded,
       onError,
       onControl,
       style,
@@ -63,6 +67,8 @@ export const ViewerStage = forwardRef<AnatomyViewerHandle, Props>(
           onReady={onReady}
           onModelLoading={onModelLoading}
           onModelLoaded={onModelLoaded}
+          onSceneLoading={onSceneLoading}
+          onSceneLoaded={onSceneLoaded}
           onError={onError}
         />
 
